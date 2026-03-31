@@ -1,13 +1,15 @@
 /*
  * LandingPage — Marketing website for SANI
  * Design: Warm Machine / Organic Modernism
- * Sections: Hero, Features, Comparison, Testimonials, Pricing, Footer
+ * Sections: Hero, Features, Testimonials, Pricing, CTA
+ * Uses shared MarketingLayout for navbar + footer
  */
 
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import MarketingLayout from "@/components/MarketingLayout";
 import {
   Users,
   Globe,
@@ -15,16 +17,12 @@ import {
   Sparkles,
   BarChart3,
   Check,
-  X,
   ArrowRight,
   ChevronRight,
   Star,
   Zap,
-  Menu,
-  XIcon,
 } from "lucide-react";
-import { testimonials, pricingTiers, comparisonData } from "@/lib/mockData";
-import { useState } from "react";
+import { testimonials, pricingTiers } from "@/lib/mockData";
 
 // Image URLs
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/hero-bg-6J7kdjgudLRhXVUiM5JTMp.webp";
@@ -60,75 +58,6 @@ function AnimatedSection({ children, className = "" }: { children: React.ReactNo
 }
 
 // ============================================================
-// NAVBAR
-// ============================================================
-function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-xl border-b border-border/50">
-      <div className="container flex items-center justify-between h-16">
-        <Link href="/">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">S</span>
-            </div>
-            <span className="font-semibold text-lg tracking-tight">SANI</span>
-          </div>
-        </Link>
-
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
-          <a href="#comparison" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Compare</a>
-          <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
-          <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-        </div>
-
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/app">
-            <Button variant="ghost" size="sm" className="text-sm">
-              Sign In
-            </Button>
-          </Link>
-          <Link href="/app">
-            <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-5">
-              Get Started
-              <ArrowRight size={14} className="ml-1" />
-            </Button>
-          </Link>
-        </div>
-
-        {/* Mobile menu button */}
-        <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <XIcon size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          className="md:hidden bg-white border-b border-border"
-        >
-          <div className="container py-4 space-y-3">
-            <a href="#features" className="block text-sm py-2" onClick={() => setMobileOpen(false)}>Features</a>
-            <a href="#comparison" className="block text-sm py-2" onClick={() => setMobileOpen(false)}>Compare</a>
-            <a href="#testimonials" className="block text-sm py-2" onClick={() => setMobileOpen(false)}>Testimonials</a>
-            <a href="#pricing" className="block text-sm py-2" onClick={() => setMobileOpen(false)}>Pricing</a>
-            <Link href="/app">
-              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-xl mt-2">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </motion.div>
-      )}
-    </nav>
-  );
-}
-
-// ============================================================
 // HERO
 // ============================================================
 function Hero() {
@@ -141,11 +70,6 @@ function Hero() {
 
       <div className="container relative">
         <AnimatedSection className="max-w-4xl mx-auto text-center">
-          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-sm font-medium mb-8">
-            <Sparkles size={14} />
-            AI-Powered Employee Operating System
-          </motion.div>
-
           <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl lg:text-7xl font-normal leading-[1.1] tracking-tight mb-6">
             The Employee OS{" "}
             <span className="italic text-teal-600">Built for</span>{" "}
@@ -269,7 +193,7 @@ function Features() {
 
         {/* Feature grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, i) => (
+          {features.map((feature) => (
             <AnimatedSection key={feature.title}>
               <motion.div
                 variants={fadeUp}
@@ -363,75 +287,6 @@ function Features() {
 }
 
 // ============================================================
-// COMPARISON
-// ============================================================
-function Comparison() {
-  return (
-    <section id="comparison" className="py-24 bg-white">
-      <div className="container">
-        <AnimatedSection className="text-center mb-16">
-          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-sm font-medium mb-4">
-            Compare
-          </motion.div>
-          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4">
-            SANI vs <span className="italic text-muted-foreground">HiBob</span>
-          </motion.h2>
-          <motion.p variants={fadeUp} className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            See why teams are switching from point solutions to a unified platform.
-          </motion.p>
-        </AnimatedSection>
-
-        <AnimatedSection className="max-w-3xl mx-auto">
-          <motion.div variants={fadeUp} className="bg-[#FEFCF8] rounded-2xl border border-border overflow-hidden">
-            {/* Header */}
-            <div className="grid grid-cols-3 px-6 py-4 border-b border-border bg-cream-dark">
-              <span className="text-sm font-medium text-muted-foreground">Feature</span>
-              <span className="text-sm font-semibold text-teal-700 text-center">SANI</span>
-              <span className="text-sm font-medium text-muted-foreground text-center">HiBob</span>
-            </div>
-
-            {/* Rows */}
-            {comparisonData.map((row, i) => (
-              <motion.div
-                key={row.feature}
-                variants={fadeUp}
-                className={`grid grid-cols-3 px-6 py-3.5 items-center ${
-                  i < comparisonData.length - 1 ? "border-b border-border/50" : ""
-                }`}
-              >
-                <span className="text-sm font-medium">{row.feature}</span>
-                <div className="flex justify-center">
-                  {row.sani ? (
-                    <div className="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center">
-                      <Check size={14} className="text-teal-600" />
-                    </div>
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center">
-                      <X size={14} className="text-red-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex justify-center">
-                  {row.hibob ? (
-                    <div className="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center">
-                      <Check size={14} className="text-teal-600" />
-                    </div>
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center">
-                      <X size={14} className="text-red-400" />
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </AnimatedSection>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================
 // TESTIMONIALS
 // ============================================================
 function Testimonials() {
@@ -503,7 +358,7 @@ function Pricing() {
         </AnimatedSection>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {pricingTiers.map((tier, i) => (
+          {pricingTiers.map((tier) => (
             <AnimatedSection key={tier.name}>
               <motion.div
                 variants={fadeUp}
@@ -599,79 +454,16 @@ function CTA() {
 }
 
 // ============================================================
-// FOOTER
-// ============================================================
-function Footer() {
-  return (
-    <footer className="border-t border-border bg-white py-16">
-      <div className="container">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">S</span>
-              </div>
-              <span className="font-semibold text-lg tracking-tight">SANI</span>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              The Employee OS built for modern teams.
-            </p>
-          </div>
-
-          {/* Links */}
-          {[
-            { title: "Product", links: ["Core HR", "Global Payroll", "IT & Identity", "Analytics", "AI Insights"] },
-            { title: "Company", links: ["About", "Careers", "Blog", "Press", "Contact"] },
-            { title: "Resources", links: ["Documentation", "API Reference", "Guides", "Community", "Status"] },
-            { title: "Legal", links: ["Privacy Policy", "Terms of Service", "Security", "GDPR", "Cookie Policy"] },
-          ].map((col) => (
-            <div key={col.title}>
-              <h4 className="text-sm font-semibold mb-4 font-sans">{col.title}</h4>
-              <ul className="space-y-2.5">
-                {col.links.map((link) => (
-                  <li key={link}>
-                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <div className="border-t border-border pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; 2026 SANI Technologies, Inc. All rights reserved.
-          </p>
-          <div className="flex items-center gap-6">
-            {["Twitter", "LinkedIn", "GitHub"].map((social) => (
-              <a key={social} href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {social}
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-// ============================================================
 // LANDING PAGE
 // ============================================================
 export default function LandingPage() {
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <MarketingLayout>
       <Hero />
       <Features />
-      <Comparison />
       <Testimonials />
       <Pricing />
       <CTA />
-      <Footer />
-    </div>
+    </MarketingLayout>
   );
 }
