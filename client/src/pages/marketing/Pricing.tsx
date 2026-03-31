@@ -1,6 +1,7 @@
 /*
  * Pricing Page — Transparent pricing tiers
  * Design: Warm Machine / Organic Modernism
+ * No icons — uses styled bullets and numbered elements
  */
 
 import { motion, useInView } from "framer-motion";
@@ -8,7 +9,6 @@ import { useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import MarketingLayout from "@/components/MarketingLayout";
-import { Check, ArrowRight, HelpCircle } from "lucide-react";
 import { pricingTiers } from "@/lib/mockData";
 import { toast } from "sonner";
 
@@ -50,7 +50,7 @@ export default function Pricing() {
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-sm font-medium mb-6">
               Pricing
             </motion.div>
-            <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl font-normal leading-[1.1] tracking-tight mb-6">
+            <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl font-normal leading-[1.1] tracking-tight mb-6 font-serif">
               Simple, <span className="italic text-teal-600">transparent</span> pricing
             </motion.h1>
             <motion.p variants={fadeUp} className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed font-sans">
@@ -102,7 +102,7 @@ export default function Pricing() {
                   <ul className="space-y-3 mb-8 flex-1">
                     {tier.features.map((f) => (
                       <li key={f} className="flex items-start gap-2.5">
-                        <Check size={16} className={`mt-0.5 flex-shrink-0 ${tier.highlighted ? "text-teal-200" : "text-teal-600"}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-2 ${tier.highlighted ? "bg-teal-300" : "bg-teal-500"}`} />
                         <span className={`text-sm ${tier.highlighted ? "text-teal-50" : ""}`}>{f}</span>
                       </li>
                     ))}
@@ -134,17 +134,19 @@ export default function Pricing() {
       <section className="py-24 bg-white">
         <div className="container">
           <AnimatedSection className="text-center mb-16">
-            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4">
+            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4 font-serif">
               Frequently asked <span className="italic text-teal-600">questions</span>
             </motion.h2>
           </AnimatedSection>
 
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {faqs.map((faq) => (
+            {faqs.map((faq, i) => (
               <AnimatedSection key={faq.q}>
                 <motion.div variants={fadeUp} className="bg-[#FEFCF8] rounded-2xl p-6 border border-border/50 h-full">
                   <div className="flex items-start gap-3">
-                    <HelpCircle size={18} className="text-teal-600 mt-0.5 flex-shrink-0" />
+                    <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
                     <div>
                       <h4 className="text-sm font-semibold mb-2 font-sans">{faq.q}</h4>
                       <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
@@ -161,7 +163,7 @@ export default function Pricing() {
       <section className="py-24">
         <div className="container">
           <AnimatedSection className="max-w-4xl mx-auto text-center">
-            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-6">
+            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-6 font-serif">
               Ready to get <span className="italic text-teal-600">started?</span>
             </motion.h2>
             <motion.p variants={fadeUp} className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
@@ -170,7 +172,7 @@ export default function Pricing() {
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/app">
                 <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white rounded-2xl px-8 py-6 text-base shadow-lg shadow-teal-600/20">
-                  Start Free Trial <ArrowRight size={18} className="ml-2" />
+                  Start Free Trial
                 </Button>
               </Link>
               <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base" onClick={() => toast("Feature coming soon")}>

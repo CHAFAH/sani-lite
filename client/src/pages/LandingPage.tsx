@@ -2,7 +2,7 @@
  * LandingPage — Marketing website for SANI
  * Design: Warm Machine / Organic Modernism
  * Sections: Hero, Features, Testimonials, Pricing, CTA
- * Uses shared MarketingLayout for navbar + footer
+ * No icons — uses numbered elements, styled typography, and images
  */
 
 import { motion, useInView } from "framer-motion";
@@ -10,18 +10,6 @@ import { useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import MarketingLayout from "@/components/MarketingLayout";
-import {
-  Users,
-  Globe,
-  Shield,
-  Sparkles,
-  BarChart3,
-  Check,
-  ArrowRight,
-  ChevronRight,
-  Star,
-  Zap,
-} from "lucide-react";
 import { testimonials, pricingTiers } from "@/lib/mockData";
 
 // Image URLs
@@ -30,6 +18,7 @@ const DASHBOARD_PREVIEW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424
 const FEATURES_ABSTRACT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/features-abstract-KUEjcLAenh3xYBpvn3yAsn.webp";
 const TESTIMONIAL_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/testimonial-bg-J72SxggiEweRRz5RxuC9pC.webp";
 const PAYROLL_GLOBE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/payroll-globe-X5KLWv5LoyzXEGAiGL8cd5.webp";
+const PROMO_VIDEO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/sani-promo-video_b629459e.mp4";
 
 // Animation variants
 const fadeUp = {
@@ -63,14 +52,13 @@ function AnimatedSection({ children, className = "" }: { children: React.ReactNo
 function Hero() {
   return (
     <section className="relative pt-32 pb-20 overflow-hidden">
-      {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <img src={HERO_BG} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
       </div>
 
       <div className="container relative">
         <AnimatedSection className="max-w-4xl mx-auto text-center">
-          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl lg:text-7xl font-normal leading-[1.1] tracking-tight mb-6">
+          <motion.h1 variants={fadeUp} className="text-5xl sm:text-6xl lg:text-7xl font-normal leading-[1.1] tracking-tight mb-6 font-serif">
             The Employee OS{" "}
             <span className="italic text-teal-600">Built for</span>{" "}
             <br className="hidden sm:block" />
@@ -86,12 +74,10 @@ function Hero() {
             <Link href="/app">
               <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white rounded-2xl px-8 py-6 text-base shadow-lg shadow-teal-600/20 hover:shadow-xl hover:shadow-teal-600/30 transition-all">
                 Get Started Free
-                <ArrowRight size={18} className="ml-2" />
               </Button>
             </Link>
             <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base border-border hover:bg-white">
               Book a Demo
-              <ChevronRight size={18} className="ml-1" />
             </Button>
           </motion.div>
 
@@ -132,45 +118,45 @@ function Hero() {
 }
 
 // ============================================================
-// FEATURES
+// FEATURES — No icons, using numbered cards and images
 // ============================================================
 const features = [
   {
-    icon: Users,
     title: "Core HR",
     description: "Single source of truth for your entire workforce. Employee profiles, org charts, custom workflows, and document management — all in one place.",
-    color: "bg-teal-50 text-teal-600",
+    color: "bg-teal-50 border-teal-200",
+    accent: "text-teal-600",
   },
   {
-    icon: Globe,
     title: "Global Payroll",
     description: "Run payroll across 100+ countries from one dashboard. Native tax compliance, benefits administration, and payslip generation with zero third-party dependencies.",
-    color: "bg-amber-50 text-amber-600",
+    color: "bg-amber-50 border-amber-200",
+    accent: "text-amber-600",
     badge: "Key Differentiator",
   },
   {
-    icon: Shield,
     title: "IT & Identity",
     description: "Manage devices, app provisioning, SSO, and access policies — all tied to your HR data. One platform for people and technology.",
-    color: "bg-purple-50 text-purple-600",
+    color: "bg-purple-50 border-purple-200",
+    accent: "text-purple-600",
   },
   {
-    icon: Sparkles,
     title: "AI Insights",
     description: "Predict employee churn, auto-generate policies, recommend promotions, and get smart workflow automation powered by machine learning.",
-    color: "bg-rose-50 text-rose-600",
+    color: "bg-rose-50 border-rose-200",
+    accent: "text-rose-600",
   },
   {
-    icon: BarChart3,
     title: "Analytics",
     description: "Real-time dashboards, custom report builder, predictive analytics, and workforce forecasting tools that turn data into decisions.",
-    color: "bg-cyan-50 text-cyan-600",
+    color: "bg-cyan-50 border-cyan-200",
+    accent: "text-cyan-600",
   },
   {
-    icon: Zap,
     title: "Automation",
     description: "Build custom workflows for onboarding, promotions, offboarding, and more. Trigger actions based on events across the entire platform.",
-    color: "bg-emerald-50 text-emerald-600",
+    color: "bg-emerald-50 border-emerald-200",
+    accent: "text-emerald-600",
   },
 ];
 
@@ -182,7 +168,7 @@ function Features() {
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-sm font-medium mb-4">
             Platform
           </motion.div>
-          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4">
+          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4 font-serif">
             One platform,{" "}
             <span className="italic text-teal-600">every tool</span>
           </motion.h2>
@@ -191,23 +177,23 @@ function Features() {
           </motion.p>
         </AnimatedSection>
 
-        {/* Feature grid */}
+        {/* Feature grid — numbered cards, no icons */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature) => (
+          {features.map((feature, i) => (
             <AnimatedSection key={feature.title}>
               <motion.div
                 variants={fadeUp}
                 whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="relative bg-white rounded-2xl p-7 border border-border/50 shadow-sm hover:shadow-lg transition-shadow duration-300 h-full"
+                className={`relative rounded-2xl p-7 border shadow-sm hover:shadow-lg transition-shadow duration-300 h-full ${feature.color}`}
               >
                 {feature.badge && (
                   <span className="absolute top-4 right-4 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
                     {feature.badge}
                   </span>
                 )}
-                <div className={`w-11 h-11 rounded-xl ${feature.color} flex items-center justify-center mb-5`}>
-                  <feature.icon size={22} />
-                </div>
+                <span className={`text-xs font-bold uppercase tracking-widest mb-4 block ${feature.accent}`}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
                 <h3 className="text-xl font-semibold mb-2 font-sans">{feature.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
               </motion.div>
@@ -225,7 +211,7 @@ function Features() {
             />
           </motion.div>
           <motion.div variants={fadeUp}>
-            <h3 className="text-3xl sm:text-4xl font-normal tracking-tight mb-4">
+            <h3 className="text-3xl sm:text-4xl font-normal tracking-tight mb-4 font-serif">
               Everything connects.{" "}
               <span className="italic text-teal-600">Natively.</span>
             </h3>
@@ -233,11 +219,11 @@ function Features() {
               When an employee is promoted, their payroll updates automatically. When someone leaves, their devices are deprovisioned instantly. No integrations to maintain. No data silos to bridge.
             </p>
             <div className="space-y-3">
-              {["Zero third-party integrations needed", "Real-time data sync across all modules", "Single audit trail for compliance"].map((item) => (
+              {["Zero third-party integrations needed", "Real-time data sync across all modules", "Single audit trail for compliance"].map((item, i) => (
                 <div key={item} className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-                    <Check size={12} className="text-teal-600" />
-                  </div>
+                  <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                    {String.fromCharCode(97 + i)}
+                  </span>
                   <span className="text-sm">{item}</span>
                 </div>
               ))}
@@ -249,10 +235,9 @@ function Features() {
         <AnimatedSection className="mt-24 grid lg:grid-cols-2 gap-12 items-center">
           <motion.div variants={fadeUp} className="order-2 lg:order-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium mb-4">
-              <Globe size={14} />
               Key Differentiator
             </div>
-            <h3 className="text-3xl sm:text-4xl font-normal tracking-tight mb-4">
+            <h3 className="text-3xl sm:text-4xl font-normal tracking-tight mb-4 font-serif">
               Global payroll,{" "}
               <span className="italic text-amber-600">built in.</span>
             </h3>
@@ -287,7 +272,40 @@ function Features() {
 }
 
 // ============================================================
-// TESTIMONIALS
+// VIDEO SECTION
+// ============================================================
+function VideoSection() {
+  return (
+    <section className="py-24 bg-white">
+      <div className="container">
+        <AnimatedSection className="text-center mb-12">
+          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4 font-serif">
+            See SANI in <span className="italic text-teal-600">action</span>
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Watch how teams navigate their org structure and access employee profiles in seconds.
+          </motion.p>
+        </AnimatedSection>
+
+        <AnimatedSection className="max-w-4xl mx-auto">
+          <motion.div variants={fadeUp} className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/10 border border-border/50">
+            <video
+              src={PROMO_VIDEO}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-auto"
+            />
+          </motion.div>
+        </AnimatedSection>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// TESTIMONIALS — Stars replaced with styled quote marks
 // ============================================================
 function Testimonials() {
   return (
@@ -301,7 +319,7 @@ function Testimonials() {
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-sm font-medium mb-4">
             Testimonials
           </motion.div>
-          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4">
+          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4 font-serif">
             Loved by <span className="italic text-teal-600">people teams</span>
           </motion.h2>
         </AnimatedSection>
@@ -314,13 +332,9 @@ function Testimonials() {
                 whileHover={{ y: -4 }}
                 className="bg-white/80 backdrop-blur-sm rounded-2xl p-7 border border-border/50 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col"
               >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} size={14} className="fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
+                <span className="text-4xl font-serif text-teal-300 leading-none mb-3">"</span>
                 <p className="text-sm leading-relaxed text-foreground/80 flex-1 mb-6">
-                  "{t.quote}"
+                  {t.quote}
                 </p>
                 <div className="flex items-center gap-3">
                   <img src={t.avatar} alt={t.author} className="w-10 h-10 rounded-full object-cover" />
@@ -339,7 +353,7 @@ function Testimonials() {
 }
 
 // ============================================================
-// PRICING
+// PRICING — Check icons replaced with teal bullets
 // ============================================================
 function Pricing() {
   return (
@@ -349,7 +363,7 @@ function Pricing() {
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-sm font-medium mb-4">
             Pricing
           </motion.div>
-          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4">
+          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-4 font-serif">
             Simple, <span className="italic text-teal-600">transparent</span> pricing
           </motion.h2>
           <motion.p variants={fadeUp} className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -396,7 +410,7 @@ function Pricing() {
                 <ul className="space-y-3 mb-8 flex-1">
                   {tier.features.map((f) => (
                     <li key={f} className="flex items-start gap-2.5">
-                      <Check size={16} className={`mt-0.5 flex-shrink-0 ${tier.highlighted ? "text-teal-200" : "text-teal-600"}`} />
+                      <span className={`w-4 h-4 rounded-full flex-shrink-0 mt-0.5 ${tier.highlighted ? "bg-teal-400" : "bg-teal-600"}`} />
                       <span className={`text-sm ${tier.highlighted ? "text-teal-50" : ""}`}>{f}</span>
                     </li>
                   ))}
@@ -421,14 +435,14 @@ function Pricing() {
 }
 
 // ============================================================
-// CTA
+// CTA — No icons
 // ============================================================
 function CTA() {
   return (
     <section className="py-24">
       <div className="container">
         <AnimatedSection className="max-w-4xl mx-auto text-center">
-          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-6">
+          <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-normal tracking-tight mb-6 font-serif">
             Ready to build a{" "}
             <span className="italic text-teal-600">better workplace?</span>
           </motion.h2>
@@ -440,7 +454,6 @@ function CTA() {
             <Link href="/app">
               <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white rounded-2xl px-8 py-6 text-base shadow-lg shadow-teal-600/20">
                 Get Started Free
-                <ArrowRight size={18} className="ml-2" />
               </Button>
             </Link>
             <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base">
@@ -461,6 +474,7 @@ export default function LandingPage() {
     <MarketingLayout>
       <Hero />
       <Features />
+      <VideoSection />
       <Testimonials />
       <Pricing />
       <CTA />

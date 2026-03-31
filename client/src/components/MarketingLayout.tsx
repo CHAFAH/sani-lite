@@ -8,12 +8,7 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowRight,
-  Menu,
-  XIcon,
-  ChevronDown,
-} from "lucide-react";
+
 
 // ============================================================
 // SANI LOGO — Unique SVG mark
@@ -76,27 +71,27 @@ const navItems: NavItem[] = [
         {
           title: "Core",
           items: [
-            { label: "Platform Overview", href: "/platform" },
-            { label: "Employee Self Service", href: "/platform" },
-            { label: "Data & Analytics", href: "/platform" },
-            { label: "Workflows & Automation", href: "/platform" },
+            { label: "Platform Overview", href: "/platform/overview" },
+            { label: "Employee Self Service", href: "/platform/employee-self-service" },
+            { label: "Data & Analytics", href: "/platform/data-analytics" },
+            { label: "Workflows & Automation", href: "/platform/workflows" },
           ],
         },
         {
           title: "Payroll Suite",
           items: [
-            { label: "Global Payroll", href: "/platform" },
-            { label: "Payroll Hub", href: "/platform" },
-            { label: "Benefits Administration", href: "/platform" },
+            { label: "Global Payroll", href: "/platform/global-payroll" },
+            { label: "Payroll Hub", href: "/platform/payroll-hub" },
+            { label: "Benefits Administration", href: "/platform/benefits" },
           ],
         },
         {
           title: "Talent Suite",
           items: [
-            { label: "Hiring", href: "/platform" },
-            { label: "Learning", href: "/platform" },
-            { label: "Performance", href: "/platform" },
-            { label: "Compensation", href: "/platform" },
+            { label: "Hiring", href: "/platform/hiring" },
+            { label: "Learning", href: "/platform/learning" },
+            { label: "Performance", href: "/platform/performance" },
+            { label: "Compensation", href: "/platform/compensation" },
           ],
         },
       ],
@@ -115,28 +110,28 @@ const navItems: NavItem[] = [
         {
           title: "By Role",
           items: [
-            { label: "For HR Leaders", href: "/solutions" },
-            { label: "For Managers", href: "/solutions" },
-            { label: "For Employees", href: "/solutions" },
-            { label: "For Finance", href: "/solutions" },
+            { label: "For HR Leaders", href: "/solutions/hr" },
+            { label: "For Managers", href: "/solutions/managers" },
+            { label: "For Employees", href: "/solutions/employees" },
+            { label: "For Finance", href: "/solutions/finance" },
           ],
         },
         {
           title: "By Need",
           items: [
-            { label: "Onboarding", href: "/solutions" },
-            { label: "Time & Attendance", href: "/solutions" },
-            { label: "Remote Teams", href: "/solutions" },
-            { label: "Compliance", href: "/solutions" },
+            { label: "Onboarding", href: "/solutions/startups" },
+            { label: "Time & Attendance", href: "/solutions/enterprise" },
+            { label: "Remote Teams", href: "/solutions/remote-teams" },
+            { label: "Compliance", href: "/solutions/enterprise" },
           ],
         },
         {
           title: "By Industry",
           items: [
-            { label: "Technology", href: "/solutions" },
-            { label: "Healthcare", href: "/solutions" },
-            { label: "Financial Services", href: "/solutions" },
-            { label: "Professional Services", href: "/solutions" },
+            { label: "Technology", href: "/solutions/startups" },
+            { label: "Healthcare", href: "/solutions/enterprise" },
+            { label: "Financial Services", href: "/solutions/finance" },
+            { label: "Professional Services", href: "/solutions/enterprise" },
           ],
         },
       ],
@@ -149,19 +144,19 @@ const navItems: NavItem[] = [
         {
           title: "Learn",
           items: [
-            { label: "Blog", href: "/resources" },
-            { label: "Guides & eBooks", href: "/resources" },
-            { label: "Webinars", href: "/resources" },
-            { label: "Case Studies", href: "/resources" },
+            { label: "Blog", href: "/resources/blog" },
+            { label: "Guides & eBooks", href: "/resources/guides" },
+            { label: "Webinars", href: "/resources/webinars" },
+            { label: "Case Studies", href: "/resources/guides" },
           ],
         },
         {
           title: "Support",
           items: [
-            { label: "Help Center", href: "/resources" },
-            { label: "API Documentation", href: "/resources" },
-            { label: "Community", href: "/resources" },
-            { label: "System Status", href: "/resources" },
+            { label: "Help Center", href: "/resources/help-center" },
+            { label: "API Documentation", href: "/resources/api-docs" },
+            { label: "Community", href: "/resources/help-center" },
+            { label: "System Status", href: "/resources/help-center" },
           ],
         },
       ],
@@ -296,10 +291,9 @@ function Navbar() {
                   }`}
                 >
                   {item.label}
-                  <ChevronDown
-                    size={14}
-                    className={`transition-transform duration-200 ${activeMenu === item.label ? "rotate-180" : ""}`}
-                  />
+                  <span
+                    className={`text-xs transition-transform duration-200 inline-block ${activeMenu === item.label ? "rotate-180" : ""}`}
+                  >▾</span>
                 </button>
               )}
             </div>
@@ -321,7 +315,7 @@ function Navbar() {
 
         {/* Mobile menu button */}
         <button className="lg:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <XIcon size={20} /> : <Menu size={20} />}
+          {mobileOpen ? <span className="text-xl leading-none">✕</span> : <span className="text-xl leading-none">☰</span>}
         </button>
       </div>
 
@@ -386,7 +380,7 @@ function MobileAccordion({ item, onNavigate }: { item: NavItem; onNavigate: () =
         className="flex items-center justify-between w-full text-sm font-medium py-3 px-3 rounded-lg hover:bg-cream-dark transition-colors"
       >
         {item.label}
-        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className={`text-xs transition-transform inline-block ${open ? "rotate-180" : ""}`}>▾</span>
       </button>
       <AnimatePresence>
         {open && (
@@ -444,25 +438,25 @@ function Footer() {
           {/* Links */}
           {[
             { title: "Product", links: [
-              { label: "Core HR", href: "/platform" },
-              { label: "Global Payroll", href: "/platform" },
-              { label: "IT & Identity", href: "/platform" },
-              { label: "Analytics", href: "/platform" },
-              { label: "AI Insights", href: "/platform" },
+              { label: "Core HR", href: "/platform/overview" },
+              { label: "Global Payroll", href: "/platform/global-payroll" },
+              { label: "IT & Identity", href: "/platform/workflows" },
+              { label: "Analytics", href: "/platform/data-analytics" },
+              { label: "AI Insights", href: "/platform/overview" },
             ]},
             { title: "Company", links: [
               { label: "About", href: "/about" },
               { label: "Careers", href: "/about" },
-              { label: "Blog", href: "/resources" },
+              { label: "Blog", href: "/resources/blog" },
               { label: "Press", href: "/about" },
               { label: "Contact", href: "/about" },
             ]},
             { title: "Resources", links: [
-              { label: "Documentation", href: "/resources" },
-              { label: "API Reference", href: "/resources" },
-              { label: "Guides", href: "/resources" },
-              { label: "Community", href: "/resources" },
-              { label: "Status", href: "/resources" },
+              { label: "Documentation", href: "/resources/api-docs" },
+              { label: "API Reference", href: "/resources/api-docs" },
+              { label: "Guides", href: "/resources/guides" },
+              { label: "Community", href: "/resources/help-center" },
+              { label: "Status", href: "/resources/help-center" },
             ]},
             { title: "Legal", links: [
               { label: "Privacy Policy", href: "#" },
