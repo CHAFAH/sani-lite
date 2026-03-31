@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { SaniLogo } from "@/components/MarketingLayout";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/app/dashboard" },
@@ -58,18 +59,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 animate={{ opacity: 1 }}
                 className="flex items-center gap-2"
               >
-                <div className="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">S</span>
-                </div>
+                <SaniLogo size={32} />
                 <span className="font-semibold text-lg tracking-tight text-warm-charcoal">SANI</span>
               </motion.div>
             </Link>
           )}
           {collapsed && (
             <Link href="/">
-              <div className="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center mx-auto">
-                <span className="text-white font-bold text-sm">S</span>
-              </div>
+              <SaniLogo size={32} />
             </Link>
           )}
           <button

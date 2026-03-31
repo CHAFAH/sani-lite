@@ -1,7 +1,7 @@
 /*
  * MarketingLayout — Shared layout for all marketing pages
  * Design: Warm Machine / Organic Modernism
- * Features: HiBob-style mega dropdown navbar + footer
+ * Features: HiBob-style mega dropdown navbar (text-only links) + footer + custom SANI logo
  */
 
 import { Link, useLocation } from "wouter";
@@ -13,28 +13,39 @@ import {
   Menu,
   XIcon,
   ChevronDown,
-  Users,
-  Globe,
-  Shield,
-  Sparkles,
-  BarChart3,
-  Zap,
-  Building2,
-  GraduationCap,
-  Heart,
-  Briefcase,
-  BookOpen,
-  FileText,
-  Headphones,
-  MessageSquare,
-  Award,
-  Target,
-  Clock,
-  Wallet,
 } from "lucide-react";
 
 // ============================================================
-// MEGA MENU DATA
+// SANI LOGO — Unique SVG mark
+// ============================================================
+export function SaniLogo({ size = 32, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      {/* Rounded square background */}
+      <rect width="48" height="48" rx="12" fill="#0D9488" />
+      {/* Abstract "S" formed by two flowing arcs */}
+      <path
+        d="M14 16C14 16 18 10 28 14C38 18 32 24 24 24C16 24 10 30 20 34C30 38 34 32 34 32"
+        stroke="white"
+        strokeWidth="4"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* Accent dot — top right */}
+      <circle cx="35" cy="13" r="3" fill="#FBBF24" />
+    </svg>
+  );
+}
+
+// ============================================================
+// MEGA MENU DATA — text-only, no icons, no descriptions
 // ============================================================
 interface NavItem {
   label: string;
@@ -54,7 +65,7 @@ interface MegaMenu {
 
 interface MegaColumn {
   title: string;
-  items: { label: string; href: string; icon?: any; description?: string }[];
+  items: { label: string; href: string }[];
 }
 
 const navItems: NavItem[] = [
@@ -65,27 +76,27 @@ const navItems: NavItem[] = [
         {
           title: "Core",
           items: [
-            { label: "Platform Overview", href: "/platform", icon: Building2, description: "See the full SANI platform" },
-            { label: "Employee Self Service", href: "/platform", icon: Users, description: "Empower your workforce" },
-            { label: "Data & Analytics", href: "/platform", icon: BarChart3, description: "Insights that drive decisions" },
-            { label: "Workflows & Automation", href: "/platform", icon: Zap, description: "Automate repetitive tasks" },
+            { label: "Platform Overview", href: "/platform" },
+            { label: "Employee Self Service", href: "/platform" },
+            { label: "Data & Analytics", href: "/platform" },
+            { label: "Workflows & Automation", href: "/platform" },
           ],
         },
         {
           title: "Payroll Suite",
           items: [
-            { label: "Global Payroll", href: "/platform", icon: Globe, description: "Pay teams in 100+ countries" },
-            { label: "Payroll Hub", href: "/platform", icon: Wallet, description: "Centralized payroll management" },
-            { label: "Benefits Administration", href: "/platform", icon: Heart, description: "Manage employee benefits" },
+            { label: "Global Payroll", href: "/platform" },
+            { label: "Payroll Hub", href: "/platform" },
+            { label: "Benefits Administration", href: "/platform" },
           ],
         },
         {
           title: "Talent Suite",
           items: [
-            { label: "Hiring", href: "/platform", icon: Target, description: "Find and hire top talent" },
-            { label: "Learning", href: "/platform", icon: GraduationCap, description: "Develop your people" },
-            { label: "Performance", href: "/platform", icon: Award, description: "Track goals and reviews" },
-            { label: "Compensation", href: "/platform", icon: Briefcase, description: "Fair and transparent pay" },
+            { label: "Hiring", href: "/platform" },
+            { label: "Learning", href: "/platform" },
+            { label: "Performance", href: "/platform" },
+            { label: "Compensation", href: "/platform" },
           ],
         },
       ],
@@ -104,28 +115,28 @@ const navItems: NavItem[] = [
         {
           title: "By Role",
           items: [
-            { label: "For HR Leaders", href: "/solutions", icon: Users, description: "Strategic workforce management" },
-            { label: "For Managers", href: "/solutions", icon: Briefcase, description: "Lead teams effectively" },
-            { label: "For Employees", href: "/solutions", icon: Heart, description: "Self-service tools" },
-            { label: "For Finance", href: "/solutions", icon: Wallet, description: "Payroll & cost control" },
+            { label: "For HR Leaders", href: "/solutions" },
+            { label: "For Managers", href: "/solutions" },
+            { label: "For Employees", href: "/solutions" },
+            { label: "For Finance", href: "/solutions" },
           ],
         },
         {
           title: "By Need",
           items: [
-            { label: "Onboarding", href: "/solutions", icon: Award, description: "Seamless new hire experience" },
-            { label: "Time & Attendance", href: "/solutions", icon: Clock, description: "Track hours and PTO" },
-            { label: "Remote Teams", href: "/solutions", icon: Globe, description: "Manage distributed workforce" },
-            { label: "Compliance", href: "/solutions", icon: Shield, description: "Stay ahead of regulations" },
+            { label: "Onboarding", href: "/solutions" },
+            { label: "Time & Attendance", href: "/solutions" },
+            { label: "Remote Teams", href: "/solutions" },
+            { label: "Compliance", href: "/solutions" },
           ],
         },
         {
           title: "By Industry",
           items: [
-            { label: "Technology", href: "/solutions", icon: Zap },
-            { label: "Healthcare", href: "/solutions", icon: Heart },
-            { label: "Financial Services", href: "/solutions", icon: Building2 },
-            { label: "Professional Services", href: "/solutions", icon: Briefcase },
+            { label: "Technology", href: "/solutions" },
+            { label: "Healthcare", href: "/solutions" },
+            { label: "Financial Services", href: "/solutions" },
+            { label: "Professional Services", href: "/solutions" },
           ],
         },
       ],
@@ -138,19 +149,19 @@ const navItems: NavItem[] = [
         {
           title: "Learn",
           items: [
-            { label: "Blog", href: "/resources", icon: BookOpen, description: "HR insights and trends" },
-            { label: "Guides & eBooks", href: "/resources", icon: FileText, description: "In-depth resources" },
-            { label: "Webinars", href: "/resources", icon: GraduationCap, description: "Live and on-demand" },
-            { label: "Case Studies", href: "/resources", icon: Award, description: "Customer success stories" },
+            { label: "Blog", href: "/resources" },
+            { label: "Guides & eBooks", href: "/resources" },
+            { label: "Webinars", href: "/resources" },
+            { label: "Case Studies", href: "/resources" },
           ],
         },
         {
           title: "Support",
           items: [
-            { label: "Help Center", href: "/resources", icon: Headphones, description: "Get answers fast" },
-            { label: "API Documentation", href: "/resources", icon: FileText, description: "Developer resources" },
-            { label: "Community", href: "/resources", icon: MessageSquare, description: "Connect with peers" },
-            { label: "System Status", href: "/resources", icon: BarChart3, description: "Uptime and incidents" },
+            { label: "Help Center", href: "/resources" },
+            { label: "API Documentation", href: "/resources" },
+            { label: "Community", href: "/resources" },
+            { label: "System Status", href: "/resources" },
           ],
         },
       ],
@@ -167,7 +178,7 @@ const navItems: NavItem[] = [
 ];
 
 // ============================================================
-// MEGA DROPDOWN COMPONENT
+// MEGA DROPDOWN COMPONENT — clean text-only links
 // ============================================================
 function MegaDropdown({ menu, onClose }: { menu: MegaMenu; onClose: () => void }) {
   return (
@@ -185,24 +196,14 @@ function MegaDropdown({ menu, onClose }: { menu: MegaMenu; onClose: () => void }
               <h4 className="text-xs font-semibold uppercase tracking-wider text-teal-600 mb-4 font-sans">
                 {col.title}
               </h4>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {col.items.map((item) => (
                   <Link key={item.label} href={item.href}>
                     <div
                       onClick={onClose}
-                      className="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-cream-dark transition-colors group"
+                      className="block px-3 py-2 rounded-lg hover:bg-cream-dark transition-colors"
                     >
-                      {item.icon && (
-                        <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-teal-100 transition-colors">
-                          <item.icon size={16} className="text-teal-600" />
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{item.label}</p>
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
-                        )}
-                      </div>
+                      <span className="text-sm font-medium text-foreground">{item.label}</span>
                     </div>
                   </Link>
                 ))}
@@ -266,11 +267,10 @@ function Navbar() {
       onMouseLeave={handleMouseLeave}
     >
       <div className="container flex items-center justify-between h-16">
+        {/* Logo */}
         <Link href="/">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">S</span>
-            </div>
+            <SaniLogo size={32} />
             <span className="font-semibold text-lg tracking-tight font-sans">SANI</span>
           </div>
         </Link>
@@ -433,9 +433,7 @@ function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">S</span>
-              </div>
+              <SaniLogo size={32} />
               <span className="font-semibold text-lg tracking-tight font-sans">SANI</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
