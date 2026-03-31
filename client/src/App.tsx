@@ -46,8 +46,8 @@ import AppEmployees from "./pages/app/Employees";
 import AppPayroll from "./pages/app/Payroll";
 import AppPerformance from "./pages/app/Performance";
 import AppAnalytics from "./pages/app/Analytics";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       {/* Marketing */}
