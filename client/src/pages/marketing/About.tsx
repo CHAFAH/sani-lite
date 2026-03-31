@@ -26,7 +26,7 @@ function AnimatedSection({ children, className = "" }: { children: React.ReactNo
   );
 }
 
-const FOUNDER_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/founder-portrait-PovBLBHAcMLbu8QBL29mYG.webp";
+const FOUNDER_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/founder-real_6d470c4e.png";
 const PEOPLE_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/values-people-5qPw6QFvCBV7kMkKCJ6w2P.webp";
 const INNOVATION_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/values-innovation-Jis58QrU3q8cw632EvnZBQ.webp";
 const GLOBAL_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310424405/ghFKSW6XSJAhWQ7DNsVTod/values-global-TnUHgx4ukzMJkgyoSxdN8g.webp";
