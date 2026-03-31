@@ -246,7 +246,7 @@ export default function FeaturePage({
                   Start Free Trial
                 </Button>
               </Link>
-              <Link href="/about">
+              <Link href="/book-demo">
                 <Button variant="outline" className="rounded-xl px-8 h-12 text-base font-semibold border-2">
                   Talk to Sales
                 </Button>

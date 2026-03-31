@@ -9,6 +9,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import LandingPage from "./pages/LandingPage";
 import About from "./pages/marketing/About";
 import PricingPage from "./pages/marketing/Pricing";
+import BookDemo from "./pages/marketing/BookDemo";
 
 // Platform pages
 import PlatformOverview from "./pages/platform/Overview";
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/about" component={About} />
       <Route path="/pricing" component={PricingPage} />
+      <Route path="/book-demo" component={BookDemo} />
 
       {/* Platform */}
       <Route path="/platform" component={PlatformOverview} />
