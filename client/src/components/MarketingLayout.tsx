@@ -308,7 +308,7 @@ function Navbar() {
           </Link>
           <Link href="/book-demo">
             <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-5">
-              Get a Free Demo
+              Book a Demo
             </Button>
           </Link>
         </div>
@@ -358,7 +358,7 @@ function Navbar() {
               <div className="pt-3 border-t border-border mt-3">
                 <Link href="/book-demo">
                   <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-xl">
-                    Get a Free Demo
+                    Book a Demo
                   </Button>
                 </Link>
               </div>
