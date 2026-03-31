@@ -306,9 +306,9 @@ function Navbar() {
               Login
             </Button>
           </Link>
-          <Link href="/app">
+          <Link href="/book-demo">
             <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-5">
-              Get a Free Demo
+              Book a Demo
             </Button>
           </Link>
         </div>
@@ -356,9 +356,9 @@ function Navbar() {
                 </div>
               ))}
               <div className="pt-3 border-t border-border mt-3">
-                <Link href="/app">
+                <Link href="/book-demo">
                   <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-xl">
-                    Get a Free Demo
+                    Book a Demo
                   </Button>
                 </Link>
               </div>

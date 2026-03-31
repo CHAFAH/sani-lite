@@ -76,9 +76,11 @@ function Hero() {
                 Get Started Free
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base border-border hover:bg-white">
-              Book a Demo
-            </Button>
+            <Link href="/book-demo">
+              <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base border-border hover:bg-white">
+                Book a Demo
+              </Button>
+            </Link>
           </motion.div>
 
           <motion.p variants={fadeUp} className="text-sm text-muted-foreground mt-4">
@@ -456,9 +458,11 @@ function CTA() {
                 Get Started Free
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base">
-              Talk to Sales
-            </Button>
+            <Link href="/book-demo">
+              <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base">
+                Book a Demo
+              </Button>
+            </Link>
           </motion.div>
         </AnimatedSection>
       </div>

@@ -175,9 +175,11 @@ export default function Pricing() {
                   Start Free Trial
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base" onClick={() => toast("Feature coming soon")}>
-                Talk to Sales
-              </Button>
+              <Link href="/book-demo">
+                <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base">
+                  Book a Demo
+                </Button>
+              </Link>
             </motion.div>
           </AnimatedSection>
         </div>
