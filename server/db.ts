@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -9,7 +9,8 @@ import {
   InsertEmployeeDocument, employeeDocuments,
   InsertPayrollRecord, payrollRecords,
   InsertPerformanceReview, performanceReviews,
-  InsertHiringRecord, hiringRecords
+  InsertHiringRecord, hiringRecords,
+  InsertSsoConfig, ssoConfigs
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -283,4 +284,49 @@ export async function createDemoLead(lead: InsertDemoLead) {
     console.error("[Database] Failed to create demo lead:", error);
     throw error;
   }
+}
+
+// ============================================================
+// SSO CONFIGURATION QUERIES
+// ============================================================
+export async function getSsoConfigsByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(ssoConfigs).where(eq(ssoConfigs.companyId, companyId));
+}
+
+export async function getSsoConfigById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(ssoConfigs).where(eq(ssoConfigs.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createSsoConfig(config: InsertSsoConfig) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(ssoConfigs).values(config);
+  // MySQL insert returns insertId in the result
+  const insertId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+  if (insertId > 0) {
+    return { insertId };
+  }
+  // Fallback: get the last inserted record
+  const created = await db.select().from(ssoConfigs)
+    .where(eq(ssoConfigs.companyId, config.companyId))
+    .orderBy((t) => t.id)
+    .limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function updateSsoConfig(id: number, updates: Partial<InsertSsoConfig>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(ssoConfigs).set(updates).where(eq(ssoConfigs.id, id));
+}
+
+export async function deleteSsoConfig(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(ssoConfigs).where(eq(ssoConfigs.id, id));
 }

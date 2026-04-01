@@ -23,7 +23,12 @@ import {
   createHiringRecord,
   getHiringByCompanyId,
   upsertUser,
-  getUserById
+  getUserById,
+  getSsoConfigsByCompanyId,
+  getSsoConfigById,
+  createSsoConfig,
+  updateSsoConfig,
+  deleteSsoConfig
 } from "./db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -402,6 +407,85 @@ export const appRouter = router({
     list: companyProcedure.query(async ({ ctx }) => {
       return getHiringByCompanyId(ctx.companyId);
     }),
+  }),
+
+  // ============================================================
+  // SSO ROUTER
+  // ============================================================
+  sso: router({
+    list: companyProcedure.query(async ({ ctx }) => {
+      return getSsoConfigsByCompanyId(ctx.companyId);
+    }),
+
+    getById: companyProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return getSsoConfigById(input.id);
+      }),
+
+    create: companyProcedure
+      .input(
+        z.object({
+          provider: z.enum(["google", "microsoft", "okta", "custom_oidc"]),
+          clientId: z.string().min(1),
+          clientSecret: z.string().min(1),
+          redirectUri: z.string().url(),
+          enabled: z.boolean().default(true),
+          metadata: z.record(z.any()).optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const result = await createSsoConfig({
+            companyId: ctx.companyId,
+            provider: input.provider,
+            clientId: input.clientId,
+            clientSecret: input.clientSecret,
+            redirectUri: input.redirectUri,
+            enabled: input.enabled,
+            metadata: input.metadata,
+          });
+          return { success: true, ssoId: result.insertId };
+        } catch (error) {
+          console.error("Failed to create SSO config:", error);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create SSO configuration" });
+        }
+      }),
+
+    update: companyProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          provider: z.enum(["google", "microsoft", "okta", "custom_oidc"]).optional(),
+          clientId: z.string().optional(),
+          clientSecret: z.string().optional(),
+          redirectUri: z.string().url().optional(),
+          enabled: z.boolean().optional(),
+          metadata: z.record(z.any()).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        try {
+          const { id, ...updates } = input;
+          await updateSsoConfig(id, updates);
+          return { success: true };
+        } catch (error) {
+          console.error("Failed to update SSO config:", error);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update SSO configuration" });
+        }
+      }),
+
+    delete: companyProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        try {
+          await deleteSsoConfig(input.id);
+          return { success: true };
+        } catch (error) {
+          console.error("Failed to delete SSO config:", error);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to delete SSO configuration" });
+        }
+      }),
   }),
 
   // ============================================================
