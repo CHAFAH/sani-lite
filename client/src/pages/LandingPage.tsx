@@ -70,7 +70,7 @@ function Hero() {
             Replace HR, payroll, IT, and finance tools with one unified platform. Powered by AI. Built for global teams. Loved by people ops.
           </motion.p>
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/app">
+            <Link href="/login">
               <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white rounded-2xl px-8 py-6 text-base shadow-lg shadow-teal-600/20">
                 Get Started Free
               </Button>
@@ -380,7 +380,7 @@ function CTA() {
             Join hundreds of teams that have replaced their HR, payroll, and IT tools with SANI.
           </motion.p>
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/app">
+            <Link href="/login">
               <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white rounded-2xl px-8 py-6 text-base shadow-lg shadow-teal-600/20">
                 Get Started Free
               </Button>

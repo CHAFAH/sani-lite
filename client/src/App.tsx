@@ -41,6 +41,9 @@ import Webinars from "./pages/resources/Webinars";
 import HelpCenter from "./pages/resources/HelpCenter";
 import ApiDocs from "./pages/resources/ApiDocs";
 
+// Auth
+import Login from "./pages/Login";
+
 // Company Onboarding
 import CompanyOnboarding from "./pages/app/CompanyOnboarding";
 
@@ -132,6 +135,9 @@ function Router() {
       <Route path="/resources/webinars" component={Webinars} />
       <Route path="/resources/help-center" component={HelpCenter} />
       <Route path="/resources/api-docs" component={ApiDocs} />
+
+      {/* ── Auth ── */}
+      <Route path="/login" component={Login} />
 
       {/* ── Company Onboarding ── */}
       <Route path="/onboarding" component={CompanyOnboarding} />

@@ -164,3 +164,7 @@
 - [x] Build employee invitation flow with secure link
 - [x] Auto-assign RBAC on first login
 - [x] Trigger onboarding checklist after signup
+
+## Phase 14: Bug Fixes
+- [x] Fix 404 error on /admin routes (was stale published version)
+- [x] Fix 404 error on login route (added /login page + fixed all /app links)

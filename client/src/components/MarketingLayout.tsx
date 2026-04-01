@@ -301,7 +301,7 @@ function Navbar() {
         </div>
 
         <div className="hidden lg:flex items-center gap-3">
-          <Link href="/app">
+          <Link href="/login">
             <Button variant="ghost" size="sm" className="text-sm font-medium">
               Login
             </Button>
