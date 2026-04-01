@@ -48,6 +48,9 @@ import AppEmployees from "./pages/app/Employees";
 import AppPayroll from "./pages/app/Payroll";
 import AppPerformance from "./pages/app/Performance";
 import AppAnalytics from "./pages/app/Analytics";
+import CompanyOnboarding from "./pages/app/CompanyOnboarding";
+import AdminDashboard from "./pages/app/AdminDashboard";
+import CoreHR from "./pages/app/CoreHR";
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => {
@@ -98,12 +101,20 @@ function Router() {
       <Route path="/resources/api-docs" component={ApiDocs} />
 
       {/* App */}
+      {/* Onboarding & Admin */}
+      <Route path="/onboarding" component={CompanyOnboarding} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+      
+      {/* App Routes */}
       <Route path="/app" component={AppDashboard} />
       <Route path="/app/dashboard" component={AppDashboard} />
       <Route path="/app/employees" component={AppEmployees} />
       <Route path="/app/payroll" component={AppPayroll} />
       <Route path="/app/performance" component={AppPerformance} />
       <Route path="/app/analytics" component={AppAnalytics} />
+      <Route path="/app/hr" component={CoreHR} />
+      <Route path="/app/hr/core" component={CoreHR} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

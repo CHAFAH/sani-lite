@@ -1,6 +1,16 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, InsertDemoLead, demoLeads } from "../drizzle/schema";
+import { 
+  InsertUser, users, 
+  InsertDemoLead, demoLeads,
+  InsertCompany, companies,
+  InsertSubscription, subscriptions,
+  InsertEmployeeProfile, employeeProfiles,
+  InsertEmployeeDocument, employeeDocuments,
+  InsertPayrollRecord, payrollRecords,
+  InsertPerformanceReview, performanceReviews,
+  InsertHiringRecord, hiringRecords
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -18,6 +28,9 @@ export async function getDb() {
   return _db;
 }
 
+// ============================================================
+// USER QUERIES
+// ============================================================
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
@@ -32,6 +45,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   try {
     const values: InsertUser = {
       openId: user.openId,
+      email: user.email || "",
     };
     const updateSet: Record<string, unknown> = {};
 
@@ -42,7 +56,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       const value = user[field];
       if (value === undefined) return;
       const normalized = value ?? null;
-      values[field] = normalized;
+      (values as Record<string, any>)[field] = normalized;
       updateSet[field] = normalized;
     };
 
@@ -85,10 +99,176 @@ export async function getUserByOpenId(openId: string) {
   }
 
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ============================================================
+// COMPANY QUERIES
+// ============================================================
+export async function createCompany(company: InsertCompany) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(companies).values(company);
+  // Get the created company to return its ID
+  const created = await db.select().from(companies).orderBy((t) => t.id).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getCompanyById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateCompany(id: number, updates: Partial<InsertCompany>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(companies).set(updates).where(eq(companies.id, id));
+}
+
+// ============================================================
+// SUBSCRIPTION QUERIES
+// ============================================================
+export async function createSubscription(subscription: InsertSubscription) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(subscriptions).values(subscription);
+  const created = await db.select().from(subscriptions).orderBy((t) => t.id).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getSubscriptionByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(subscriptions).where(eq(subscriptions.companyId, companyId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function checkSeatAvailability(companyId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  
+  const subscription = await getSubscriptionByCompanyId(companyId);
+  if (!subscription) return false;
+  
+  return subscription.usedSeats < subscription.seats;
+}
+
+// ============================================================
+// EMPLOYEE PROFILE QUERIES
+// ============================================================
+export async function createEmployeeProfile(profile: InsertEmployeeProfile) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(employeeProfiles).values(profile);
+  const created = await db.select().from(employeeProfiles).orderBy((t) => t.id).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getEmployeesByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(employeeProfiles).where(eq(employeeProfiles.companyId, companyId));
+}
+
+export async function getEmployeeById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(employeeProfiles).where(eq(employeeProfiles.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateEmployeeProfile(id: number, updates: Partial<InsertEmployeeProfile>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(employeeProfiles).set(updates).where(eq(employeeProfiles.id, id));
+}
+
+export async function deleteEmployee(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(employeeProfiles).where(eq(employeeProfiles.id, id));
+}
+
+// ============================================================
+// EMPLOYEE DOCUMENT QUERIES
+// ============================================================
+export async function uploadEmployeeDocument(doc: InsertEmployeeDocument) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(employeeDocuments).values(doc);
+  const created = await db.select().from(employeeDocuments).orderBy((t) => t.id).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getEmployeeDocuments(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(employeeDocuments).where(eq(employeeDocuments.employeeId, employeeId));
+}
+
+// ============================================================
+// PAYROLL QUERIES
+// ============================================================
+export async function createPayrollRecord(record: InsertPayrollRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(payrollRecords).values(record);
+  const created = await db.select().from(payrollRecords).orderBy((t) => t.id).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getPayrollByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(payrollRecords).where(eq(payrollRecords.companyId, companyId));
+}
+
+// ============================================================
+// PERFORMANCE REVIEW QUERIES
+// ============================================================
+export async function createPerformanceReview(review: InsertPerformanceReview) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(performanceReviews).values(review);
+  const created = await db.select().from(performanceReviews).orderBy((t) => t.id).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getPerformanceReviewsByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(performanceReviews).where(eq(performanceReviews.companyId, companyId));
+}
+
+// ============================================================
+// HIRING QUERIES
+// ============================================================
+export async function createHiringRecord(record: InsertHiringRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(hiringRecords).values(record);
+  const created = await db.select().from(hiringRecords).orderBy((t) => t.id).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getHiringByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(hiringRecords).where(eq(hiringRecords.companyId, companyId));
+}
+
+// ============================================================
+// DEMO LEADS (Legacy)
+// ============================================================
 export async function createDemoLead(lead: InsertDemoLead) {
   const db = await getDb();
   if (!db) {
@@ -104,5 +284,3 @@ export async function createDemoLead(lead: InsertDemoLead) {
     throw error;
   }
 }
-
-// TODO: add feature queries here as your schema grows.
