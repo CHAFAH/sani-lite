@@ -26,3 +26,21 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 // TODO: Add your tables here
+/**
+ * Demo leads table for Book a Demo form submissions
+ */
+export const demoLeads = mysqlTable("demo_leads", {
+  id: int("id").autoincrement().primaryKey(),
+  firstName: varchar("firstName", { length: 100 }).notNull(),
+  lastName: varchar("lastName", { length: 100 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  company: varchar("company", { length: 255 }).notNull(),
+  jobTitle: varchar("jobTitle", { length: 255 }),
+  companySize: varchar("companySize", { length: 50 }),
+  primaryInterest: varchar("primaryInterest", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DemoLead = typeof demoLeads.$inferSelect;
+export type InsertDemoLead = typeof demoLeads.$inferInsert;

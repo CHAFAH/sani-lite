@@ -1,14 +1,15 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { useEffect } from "react";
 
 // Marketing pages
 import LandingPage from "./pages/LandingPage";
 import About from "./pages/marketing/About";
-import PricingPage from "./pages/marketing/Pricing";
+
 import BookDemo from "./pages/marketing/BookDemo";
 
 // Platform pages
@@ -46,6 +47,14 @@ import AppEmployees from "./pages/app/Employees";
 import AppPayroll from "./pages/app/Payroll";
 import AppPerformance from "./pages/app/Performance";
 import AppAnalytics from "./pages/app/Analytics";
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  return null;
+}
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -53,7 +62,7 @@ function Router() {
       {/* Marketing */}
       <Route path="/" component={LandingPage} />
       <Route path="/about" component={About} />
-      <Route path="/pricing" component={PricingPage} />
+
       <Route path="/book-demo" component={BookDemo} />
 
       {/* Platform */}
@@ -106,6 +115,7 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
+          <ScrollToTop />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

@@ -2,6 +2,8 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { createDemoLead } from "./db";
+import { z } from "zod";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -17,12 +19,30 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  demo: router({
+    submitLead: publicProcedure
+      .input(
+        z.object({
+          firstName: z.string().min(1),
+          lastName: z.string().min(1),
+          email: z.string().email(),
+          company: z.string().min(1),
+          jobTitle: z.string().optional(),
+          companySize: z.string().optional(),
+          primaryInterest: z.string().optional(),
+          notes: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        try {
+          await createDemoLead(input);
+          return { success: true, message: "Demo request submitted successfully" };
+        } catch (error) {
+          console.error("Failed to submit demo lead:", error);
+          throw new Error("Failed to submit demo request");
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
