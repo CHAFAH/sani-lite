@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sani-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: sani
+      MYSQL_USER: sani
+      MYSQL_PASSWORD: sanipassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - sani_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "sani", "-psanipassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sani_mysql_data:

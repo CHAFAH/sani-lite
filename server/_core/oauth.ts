@@ -10,6 +10,60 @@ function getQueryParam(req: Request, key: string): string | undefined {
 }
 
 export function registerOAuthRoutes(app: Express) {
+  // ── Dev bypass login (development only) ──────────────────────────────────
+  if (process.env.NODE_ENV !== "production") {
+    app.get("/api/dev-login", async (req: Request, res: Response) => {
+      const DEV_OPEN_ID = "dev-bypass-user-001";
+      try {
+        // 1. Upsert the dev user
+        await db.upsertUser({
+          openId: DEV_OPEN_ID,
+          name: "Dev Admin",
+          email: "dev@sani.local",
+          role: "company_owner",
+          loginMethod: "dev",
+          lastSignedIn: new Date(),
+        });
+
+        // 2. Create a dev company + subscription if the user has no companyId yet
+        const user = await db.getUserByOpenId(DEV_OPEN_ID);
+        if (user && !user.companyId) {
+          const company = await db.createCompany({
+            name: "Acme Corp (Dev)",
+            industry: "Technology",
+            size: "51-200",
+            status: "active",
+            kycVerified: true,
+          });
+          const companyId = company.insertId;
+
+          await db.createSubscription({
+            companyId,
+            tier: "growth",
+            seats: 50,
+            price: "299",
+            billingCycle: "monthly",
+            status: "active",
+          });
+
+          await db.setUserCompanyId(DEV_OPEN_ID, companyId);
+        }
+
+        const sessionToken = await sdk.createSessionToken(DEV_OPEN_ID, {
+          name: "Dev Admin",
+          expiresInMs: ONE_YEAR_MS,
+        });
+
+        const cookieOptions = getSessionCookieOptions(req);
+        res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        res.redirect(302, "/admin/dashboard");
+      } catch (error) {
+        console.error("[DevLogin] Failed", error);
+        res.status(500).json({ error: "Dev login failed" });
+      }
+    });
+  }
+
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
@@ -44,7 +98,7 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.redirect(302, "/");
+      res.redirect(302, "/admin/dashboard");
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed" });

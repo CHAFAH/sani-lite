@@ -986,6 +986,12 @@ export async function updateUserProfileCompleted(userId: number, completed: bool
   return db.update(users).set({ profileCompleted: completed }).where(eq(users.id, userId));
 }
 
+export async function setUserCompanyId(openId: string, companyId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users).set({ companyId }).where(eq(users.openId, openId));
+}
+
 export async function getUsersByCompanyId(companyId: number) {
   const db = await getDb();
   if (!db) return [];

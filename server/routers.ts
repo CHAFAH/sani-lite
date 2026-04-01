@@ -33,6 +33,7 @@ import {
   createInvitation, getInvitationsByCompanyId, getInvitationByToken, updateInvitation,
   createFeedback, getFeedbackByEmployeeId, getFeedbackByCompanyId,
   getEmployeeByUserId, getEmployeesByManagerId, updateUserRole, updateUserProfileCompleted, getUsersByCompanyId,
+  setUserCompanyId,
 } from "./db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -66,16 +67,19 @@ export const appRouter = router({
   // COMPANY ROUTER
   // ============================================================
   company: router({
-    create: publicProcedure
+    create: protectedProcedure
       .input(z.object({
         name: z.string().min(1),
         industry: z.string().optional(),
         size: z.string().optional(),
         website: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const result = await createCompany({ name: input.name, industry: input.industry, size: input.size, website: input.website, status: "onboarding" });
-        return { success: true, companyId: result.insertId };
+        const companyId = result.insertId;
+        // Link this company to the user who created it
+        await setUserCompanyId(ctx.user.openId, companyId);
+        return { success: true, companyId };
       }),
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
