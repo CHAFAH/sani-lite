@@ -1,171 +1,133 @@
 /*
- * Payroll — Global payroll management page
- * Design: Warm Machine / Organic Modernism
+ * Payroll — Global payroll management with real data
  */
-
 import AppLayout from "@/components/AppLayout";
+import { trpc } from "@/lib/trpc";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Globe, DollarSign, Clock, AlertTriangle } from "lucide-react";
-import { payrollRecords, payrollByCountry } from "@/lib/mockData";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { Plus, Wallet, Globe, Clock, DollarSign } from "lucide-react";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-};
+export default function PayrollPage() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [form, setForm] = useState({ employeeId: "", payrollCycle: "", baseSalary: "", grossPay: "", deductions: "", netPay: "", currency: "USD", country: "" });
 
-const statusColors: Record<string, string> = {
-  Processed: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Pending: "bg-amber-50 text-amber-700 border-amber-200",
-  Failed: "bg-red-50 text-red-700 border-red-200",
-};
+  const utils = trpc.useUtils();
+  const { data: payroll, isLoading } = trpc.payroll.list.useQuery();
+  const { data: employees } = trpc.employee.list.useQuery();
+  const createMut = trpc.payroll.create.useMutation({ onSuccess: () => { utils.payroll.list.invalidate(); setIsOpen(false); toast.success("Payroll record created"); } });
+  const approveMut = trpc.payroll.approve.useMutation({ onSuccess: () => { utils.payroll.list.invalidate(); toast.success("Payroll approved"); } });
+  const processMut = trpc.payroll.process.useMutation({ onSuccess: () => { utils.payroll.list.invalidate(); toast.success("Payroll processed"); } });
+  const paidMut = trpc.payroll.markPaid.useMutation({ onSuccess: () => { utils.payroll.list.invalidate(); toast.success("Marked as paid"); } });
 
-const payrollStats = [
-  { label: "Total Payroll", value: "$3.63M", icon: DollarSign, color: "bg-teal-50 text-teal-600" },
-  { label: "Countries", value: "6", icon: Globe, color: "bg-amber-50 text-amber-600" },
-  { label: "Next Run", value: "Mar 31", icon: Clock, color: "bg-purple-50 text-purple-600" },
-  { label: "Pending", value: "2", icon: AlertTriangle, color: "bg-rose-50 text-rose-600" },
-];
+  const totalGross = (payroll || []).reduce((s, p) => s + Number(p.grossPay || 0), 0);
+  const totalNet = (payroll || []).reduce((s, p) => s + Number(p.netPay || 0), 0);
+  const pendingCount = (payroll || []).filter(p => p.status === "draft" || p.status === "approved").length;
 
-export default function AppPayroll() {
+  const statusColor: Record<string, string> = { draft: "bg-gray-50 text-gray-600", approved: "bg-blue-50 text-blue-600", processed: "bg-amber-50 text-amber-700", paid: "bg-emerald-50 text-emerald-700" };
+
+  const getEmployeeName = (id: number) => {
+    const emp = employees?.find(e => e.id === id);
+    return emp ? `${emp.firstName} ${emp.lastName}` : `Employee #${id}`;
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <motion.div initial="hidden" animate="visible" variants={fadeUp}>
-          <h1 className="text-3xl font-normal tracking-tight font-serif">Payroll</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage global payroll across all your entities</p>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-normal tracking-tight font-serif">Global Payroll</h1>
+            <p className="text-muted-foreground text-sm mt-1">Manage payroll across all entities</p>
+          </div>
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white gap-2"><Plus size={16} />Add Payroll</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Create Payroll Record</DialogTitle></DialogHeader>
+              <div className="space-y-3 mt-4">
+                <Select value={form.employeeId} onValueChange={v => setForm(p => ({ ...p, employeeId: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select Employee" /></SelectTrigger>
+                  <SelectContent>{(employees || []).map(e => <SelectItem key={e.id} value={String(e.id)}>{e.firstName} {e.lastName}</SelectItem>)}</SelectContent>
+                </Select>
+                <Input placeholder="Payroll Cycle (e.g. March 2026)" value={form.payrollCycle} onChange={e => setForm(p => ({ ...p, payrollCycle: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Base Salary" type="number" value={form.baseSalary} onChange={e => setForm(p => ({ ...p, baseSalary: e.target.value }))} />
+                  <Input placeholder="Gross Pay" type="number" value={form.grossPay} onChange={e => setForm(p => ({ ...p, grossPay: e.target.value }))} />
+                  <Input placeholder="Deductions" type="number" value={form.deductions} onChange={e => setForm(p => ({ ...p, deductions: e.target.value }))} />
+                  <Input placeholder="Net Pay" type="number" value={form.netPay} onChange={e => setForm(p => ({ ...p, netPay: e.target.value }))} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Select value={form.currency} onValueChange={v => setForm(p => ({ ...p, currency: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger>
+                    <SelectContent>{["USD", "EUR", "GBP", "NGN", "CAD"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Input placeholder="Country" value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value }))} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+                <Button className="bg-teal-600 hover:bg-teal-700 text-white" disabled={createMut.isPending} onClick={() => {
+                  if (!form.employeeId || !form.payrollCycle || !form.grossPay || !form.netPay) { toast.error("Please fill required fields"); return; }
+                  createMut.mutate({ employeeId: Number(form.employeeId), payrollCycle: form.payrollCycle, baseSalary: form.baseSalary || "0", grossPay: form.grossPay, deductions: form.deductions || "0", netPay: form.netPay, currency: form.currency, country: form.country || undefined });
+                }}>{createMut.isPending ? "Creating..." : "Create"}</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </motion.div>
 
         {/* Stats */}
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          {payrollStats.map((stat) => (
-            <motion.div
-              key={stat.label}
-              variants={fadeUp}
-              className="bg-white rounded-2xl p-5 border border-border/50 shadow-sm"
-            >
-              <div className={`w-9 h-9 rounded-xl ${stat.color} flex items-center justify-center mb-3`}>
-                <stat.icon size={18} />
-              </div>
-              <p className="text-2xl font-semibold font-sans">{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Chart + Country breakdown */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-            className="bg-white rounded-2xl p-6 border border-border/50 shadow-sm"
-          >
-            <h3 className="text-lg font-semibold font-sans mb-1">Payroll by Country</h3>
-            <p className="text-sm text-muted-foreground mb-4">Monthly payroll distribution</p>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={payrollByCountry} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0ede8" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
-                <YAxis type="category" dataKey="country" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={110} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: "1px solid #e5e2dc", boxShadow: "0 4px 12px rgba(0,0,0,0.06)", fontSize: 13 }}
-                  formatter={(value: number) => [`$${value.toLocaleString()}`, "Total Payroll"]}
-                />
-                <Bar dataKey="totalPayroll" fill="#0D9488" radius={[0, 6, 6, 0]} barSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-            className="bg-white rounded-2xl p-6 border border-border/50 shadow-sm"
-          >
-            <h3 className="text-lg font-semibold font-sans mb-1">Country Breakdown</h3>
-            <p className="text-sm text-muted-foreground mb-4">Employees and payroll by entity</p>
-            <div className="space-y-3">
-              {payrollByCountry.map((country) => (
-                <div key={country.country} className="flex items-center justify-between py-2.5 border-b border-border/30 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{country.country}</p>
-                    <p className="text-xs text-muted-foreground">{country.employees} employees</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold">${(country.totalPayroll / 1000).toFixed(0)}K</p>
-                    <p className="text-xs text-muted-foreground">{country.currency}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center"><DollarSign size={20} className="text-teal-600" /></div><div><p className="text-2xl font-semibold">${totalGross.toLocaleString()}</p><p className="text-xs text-muted-foreground">Total Gross</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center"><Wallet size={20} className="text-emerald-600" /></div><div><p className="text-2xl font-semibold">${totalNet.toLocaleString()}</p><p className="text-xs text-muted-foreground">Total Net</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center"><Clock size={20} className="text-amber-600" /></div><div><p className="text-2xl font-semibold">{pendingCount}</p><p className="text-xs text-muted-foreground">Pending</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center"><Globe size={20} className="text-purple-600" /></div><div><p className="text-2xl font-semibold">{(payroll || []).length}</p><p className="text-xs text-muted-foreground">Records</p></div></div></CardContent></Card>
         </div>
 
-        {/* Payroll records table */}
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-          className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden"
-        >
-          <div className="px-6 py-4 border-b border-border">
-            <h3 className="text-lg font-semibold font-sans">Recent Payroll Runs</h3>
-            <p className="text-sm text-muted-foreground">March 2026 payroll cycle</p>
-          </div>
-          <div className="overflow-x-auto">
+        {/* Payroll Table */}
+        {isLoading ? (
+          <Skeleton className="h-64 rounded-xl" />
+        ) : (payroll || []).length === 0 ? (
+          <Card className="py-12 text-center"><CardContent><Wallet size={48} className="mx-auto text-muted-foreground/40 mb-3" /><p className="text-muted-foreground">No payroll records yet. Add your first payroll record to get started.</p></CardContent></Card>
+        ) : (
+          <div className="bg-white rounded-xl border border-border/50 shadow-sm overflow-hidden">
             <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-cream-dark/50">
-                  <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-3">Employee</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-3">Department</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-3">Base</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-3">Bonus</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-3">Deductions</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-3">Net Pay</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-3">Status</th>
-                </tr>
-              </thead>
+              <thead><tr className="border-b bg-gray-50/50">
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Employee</th>
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-4 py-3">Cycle</th>
+                <th className="text-right text-xs font-medium text-muted-foreground uppercase px-4 py-3">Gross</th>
+                <th className="text-right text-xs font-medium text-muted-foreground uppercase px-4 py-3">Deductions</th>
+                <th className="text-right text-xs font-medium text-muted-foreground uppercase px-4 py-3">Net</th>
+                <th className="text-center text-xs font-medium text-muted-foreground uppercase px-4 py-3">Status</th>
+                <th className="text-right text-xs font-medium text-muted-foreground uppercase px-4 py-3">Actions</th>
+              </tr></thead>
               <tbody>
-                {payrollRecords.map((record, i) => (
-                  <motion.tr
-                    key={record.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="border-b border-border/30 hover:bg-cream-dark/30 transition-colors"
-                  >
-                    <td className="px-6 py-3.5 text-sm font-medium">{record.employee}</td>
-                    <td className="px-6 py-3.5 text-sm text-muted-foreground">{record.department}</td>
-                    <td className="px-6 py-3.5 text-sm text-right">{record.currency} {record.baseSalary.toLocaleString()}</td>
-                    <td className="px-6 py-3.5 text-sm text-right text-emerald-600">+{record.bonus.toLocaleString()}</td>
-                    <td className="px-6 py-3.5 text-sm text-right text-red-500">-{record.deductions.toLocaleString()}</td>
-                    <td className="px-6 py-3.5 text-sm text-right font-semibold">{record.currency} {record.netPay.toLocaleString()}</td>
-                    <td className="px-6 py-3.5">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[record.status]}`}>
-                        {record.status}
-                      </span>
+                {(payroll || []).map(p => (
+                  <tr key={p.id} className="border-b border-border/30 hover:bg-gray-50/30">
+                    <td className="px-4 py-3 text-sm font-medium">{getEmployeeName(p.employeeId)}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{p.payrollCycle}</td>
+                    <td className="px-4 py-3 text-sm text-right">{p.currency} {Number(p.grossPay).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-right text-red-600">-{Number(p.deductions || 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-right font-semibold">{p.currency} {Number(p.netPay).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-center"><Badge variant="outline" className={statusColor[p.status || "draft"]}>{p.status}</Badge></td>
+                    <td className="px-4 py-3 text-right">
+                      {p.status === "draft" && <Button size="sm" variant="outline" onClick={() => approveMut.mutate({ id: p.id })}>Approve</Button>}
+                      {p.status === "approved" && <Button size="sm" variant="outline" onClick={() => processMut.mutate({ id: p.id })}>Process</Button>}
+                      {p.status === "processed" && <Button size="sm" variant="outline" className="text-emerald-600" onClick={() => paidMut.mutate({ id: p.id })}>Mark Paid</Button>}
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </motion.div>
+        )}
       </div>
     </AppLayout>
   );

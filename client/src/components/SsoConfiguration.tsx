@@ -37,12 +37,13 @@ const PROVIDER_INFO: Record<Provider, { name: string; description: string; docsU
 
 interface SsoConfig {
   id: number;
+  companyId: number;
   provider: Provider;
   clientId: string;
   clientSecret: string;
   redirectUri: string;
-  enabled: boolean;
-  metadata?: Record<string, any>;
+  enabled: boolean | null;
+  metadata?: unknown;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -72,7 +73,7 @@ export default function SsoConfiguration() {
         clientId: config.clientId,
         clientSecret: config.clientSecret,
         redirectUri: config.redirectUri,
-        enabled: config.enabled,
+        enabled: config.enabled ?? true,
       });
     } else {
       setEditingId(null);
