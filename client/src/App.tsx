@@ -11,6 +11,7 @@ import LandingPage from "./pages/LandingPage";
 import About from "./pages/marketing/About";
 
 import BookDemo from "./pages/marketing/BookDemo";
+import Pricing from "./pages/marketing/Pricing";
 
 // Platform pages
 import PlatformOverview from "./pages/platform/Overview";
@@ -64,6 +65,7 @@ function Router() {
       <Route path="/about" component={About} />
 
       <Route path="/book-demo" component={BookDemo} />
+      <Route path="/pricing" component={Pricing} />
 
       {/* Platform */}
       <Route path="/platform" component={PlatformOverview} />
