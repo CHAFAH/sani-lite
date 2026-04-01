@@ -119,3 +119,48 @@
 - [x] Unified sidebar navigation with module grouping
 - [x] Cross-module data flow (employee data shared across modules)
 - [x] Tests for new module operations
+
+## Phase 13: Strict Role Separation & RBAC Rebuild
+
+### RBAC & Permissions
+- [x] Add roles table (admin, hr_admin, manager, employee + custom roles)
+- [x] Add permissions table with module-level access control
+- [x] Add role_permissions junction table
+- [x] Add departments table with hierarchy support
+- [x] Update employee_profiles with reportsTo/managerId hierarchy
+- [x] Build RBAC middleware (adminProcedure, managerProcedure, employeeProcedure)
+- [x] Implement role-based routing guards on frontend
+
+### Admin Platform
+- [x] Build Admin Dashboard (data-dense, company-wide analytics)
+- [x] Build Organization Setup (departments, job roles, org structure)
+- [x] Build Employee Management (add/bulk upload, assign role/dept/manager)
+- [x] Build RBAC Management UI (create roles, assign permissions)
+- [x] Build Payroll & Finance admin controls
+- [x] Build Workflows & Automation admin panel
+- [x] Build Full Analytics dashboard (headcount, attrition, salary distribution)
+
+### Manager Platform
+- [x] Build Manager Dashboard (team-centric, focused)
+- [x] Build Team View (direct reports only)
+- [x] Build Leave/Expense Approval queue
+- [x] Build Team Performance view
+- [ ] Build 1:1 Meeting scheduler (placeholder)
+- [x] Restrict manager access (no payroll, no system settings, no global roles)
+
+### Employee Platform
+- [x] Build Employee Dashboard (clean, minimal, task-driven)
+- [x] Build Profile Completion wizard (first login onboarding)
+- [x] Build Employee Self-Service (view profile, request leave, view payslips)
+- [x] Build Goal tracking and feedback
+- [x] Restrict employee access (no salary visibility, no admin settings)
+
+### Company Hierarchy
+- [ ] Build dynamic org chart visualization
+- [ ] Implement reporting lines (reportsTo chain)
+- [ ] Build approval chains based on hierarchy
+
+### Invitation System
+- [x] Build employee invitation flow with secure link
+- [x] Auto-assign RBAC on first login
+- [x] Trigger onboarding checklist after signup

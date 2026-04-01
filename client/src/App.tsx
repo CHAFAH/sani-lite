@@ -12,7 +12,7 @@ import About from "./pages/marketing/About";
 import BookDemo from "./pages/marketing/BookDemo";
 import Pricing from "./pages/marketing/Pricing";
 
-// Platform pages
+// Platform pages (marketing info)
 import PlatformOverview from "./pages/platform/Overview";
 import PlatformEmployeeSelfService from "./pages/platform/EmployeeSelfService";
 import DataAnalytics from "./pages/platform/DataAnalytics";
@@ -41,30 +41,50 @@ import Webinars from "./pages/resources/Webinars";
 import HelpCenter from "./pages/resources/HelpCenter";
 import ApiDocs from "./pages/resources/ApiDocs";
 
-// App pages — Core
-import AppDashboard from "./pages/app/Dashboard";
-import AppEmployees from "./pages/app/Employees";
-import AppEmployeeSelfService from "./pages/app/EmployeeSelfService";
-import AppAnalytics from "./pages/app/Analytics";
-import AppWorkflows from "./pages/app/Workflows";
-import AppAnnouncements from "./pages/app/Announcements";
-import AppTimeOff from "./pages/app/TimeOff";
-import CoreHR from "./pages/app/CoreHR";
-
-// App pages — Payroll Suite
-import AppPayroll from "./pages/app/Payroll";
-import AppPayrollHub from "./pages/app/PayrollHub";
-import AppBenefits from "./pages/app/Benefits";
-
-// App pages — Talent Suite
-import AppHiring from "./pages/app/Hiring";
-import AppLearning from "./pages/app/Learning";
-import AppPerformance from "./pages/app/Performance";
-import AppCompensation from "./pages/app/Compensation";
-
-// App pages — Admin & Onboarding
+// Company Onboarding
 import CompanyOnboarding from "./pages/app/CompanyOnboarding";
-import AdminDashboard from "./pages/app/AdminDashboard";
+
+// Admin Platform pages
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import AdminEmployeesPage from "./pages/admin/AdminEmployeesPage";
+import AdminDepartmentsPage from "./pages/admin/AdminDepartmentsPage";
+import AdminInvitationsPage from "./pages/admin/AdminInvitationsPage";
+import AdminRbacPage from "./pages/admin/AdminRbacPage";
+import AdminTimeOffPage from "./pages/admin/AdminTimeOffPage";
+import AdminPayrollPage from "./pages/admin/AdminPayrollPage";
+import AdminPayrollHubPage from "./pages/admin/AdminPayrollHubPage";
+import {
+  AdminBenefitsPage,
+  AdminHiringPage,
+  AdminLearningPage,
+  AdminPerformancePage,
+  AdminGoalsPage,
+  AdminCompensationPage,
+  AdminAnnouncementsPage,
+  AdminAnalyticsPage,
+  AdminWorkflowsPage,
+  AdminSsoPage,
+  AdminCompanyPage,
+} from "./pages/admin/AdminModulePages";
+
+// Manager Platform pages
+import ManagerDashboardPage from "./pages/manager/ManagerDashboardPage";
+import ManagerTeamPage from "./pages/manager/ManagerTeamPage";
+import ManagerTimeOffPage from "./pages/manager/ManagerTimeOffPage";
+import ManagerGoalsPage from "./pages/manager/ManagerGoalsPage";
+import ManagerPerformancePage from "./pages/manager/ManagerPerformancePage";
+import ManagerFeedbackPage from "./pages/manager/ManagerFeedbackPage";
+
+// Employee Platform pages
+import EmployeeDashboardPage from "./pages/employee/EmployeeDashboardPage";
+import EmployeeProfilePage from "./pages/employee/EmployeeProfilePage";
+import EmployeeTimeOffPage from "./pages/employee/EmployeeTimeOffPage";
+import EmployeeLearningPage from "./pages/employee/EmployeeLearningPage";
+import EmployeeGoalsPage from "./pages/employee/EmployeeGoalsPage";
+import EmployeeBenefitsPage from "./pages/employee/EmployeeBenefitsPage";
+import EmployeeFeedbackPage from "./pages/employee/EmployeeFeedbackPage";
+import EmployeePayslipsPage from "./pages/employee/EmployeePayslipsPage";
+import EmployeeOnboardingPage from "./pages/employee/EmployeeOnboardingPage";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -75,16 +95,15 @@ function ScrollToTop() {
 }
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      {/* Marketing */}
+      {/* ── Marketing ── */}
       <Route path="/" component={LandingPage} />
       <Route path="/about" component={About} />
       <Route path="/book-demo" component={BookDemo} />
       <Route path="/pricing" component={Pricing} />
 
-      {/* Platform (marketing info pages) */}
+      {/* ── Platform (marketing info pages) ── */}
       <Route path="/platform" component={PlatformOverview} />
       <Route path="/platform/overview" component={PlatformOverview} />
       <Route path="/platform/employee-self-service" component={PlatformEmployeeSelfService} />
@@ -98,7 +117,7 @@ function Router() {
       <Route path="/platform/performance" component={PerformanceMgmt} />
       <Route path="/platform/compensation" component={PlatformCompensation} />
 
-      {/* Solutions */}
+      {/* ── Solutions ── */}
       <Route path="/solutions/hr" component={ForHR} />
       <Route path="/solutions/managers" component={ForManagers} />
       <Route path="/solutions/employees" component={ForEmployees} />
@@ -107,40 +126,67 @@ function Router() {
       <Route path="/solutions/enterprise" component={Enterprise} />
       <Route path="/solutions/remote-teams" component={RemoteTeams} />
 
-      {/* Resources */}
+      {/* ── Resources ── */}
       <Route path="/resources/blog" component={Blog} />
       <Route path="/resources/guides" component={Guides} />
       <Route path="/resources/webinars" component={Webinars} />
       <Route path="/resources/help-center" component={HelpCenter} />
       <Route path="/resources/api-docs" component={ApiDocs} />
 
-      {/* Onboarding & Admin */}
+      {/* ── Company Onboarding ── */}
       <Route path="/onboarding" component={CompanyOnboarding} />
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
 
-      {/* App — Core */}
-      <Route path="/app" component={AppDashboard} />
-      <Route path="/app/dashboard" component={AppDashboard} />
-      <Route path="/app/employees" component={AppEmployees} />
-      <Route path="/app/self-service" component={AppEmployeeSelfService} />
-      <Route path="/app/analytics" component={AppAnalytics} />
-      <Route path="/app/workflows" component={AppWorkflows} />
-      <Route path="/app/announcements" component={AppAnnouncements} />
-      <Route path="/app/time-off" component={AppTimeOff} />
-      <Route path="/app/hr" component={CoreHR} />
-      <Route path="/app/hr/core" component={CoreHR} />
+      {/* ══════════════════════════════════════════════
+          ADMIN PLATFORM — /admin/*
+          Full control: all modules, settings, RBAC
+         ══════════════════════════════════════════════ */}
+      <Route path="/admin" component={AdminDashboardPage} />
+      <Route path="/admin/dashboard" component={AdminDashboardPage} />
+      <Route path="/admin/employees" component={AdminEmployeesPage} />
+      <Route path="/admin/departments" component={AdminDepartmentsPage} />
+      <Route path="/admin/invitations" component={AdminInvitationsPage} />
+      <Route path="/admin/rbac" component={AdminRbacPage} />
+      <Route path="/admin/time-off" component={AdminTimeOffPage} />
+      <Route path="/admin/payroll" component={AdminPayrollPage} />
+      <Route path="/admin/payroll-hub" component={AdminPayrollHubPage} />
+      <Route path="/admin/benefits" component={AdminBenefitsPage} />
+      <Route path="/admin/hiring" component={AdminHiringPage} />
+      <Route path="/admin/learning" component={AdminLearningPage} />
+      <Route path="/admin/performance" component={AdminPerformancePage} />
+      <Route path="/admin/goals" component={AdminGoalsPage} />
+      <Route path="/admin/compensation" component={AdminCompensationPage} />
+      <Route path="/admin/announcements" component={AdminAnnouncementsPage} />
+      <Route path="/admin/analytics" component={AdminAnalyticsPage} />
+      <Route path="/admin/workflows" component={AdminWorkflowsPage} />
+      <Route path="/admin/sso" component={AdminSsoPage} />
+      <Route path="/admin/company" component={AdminCompanyPage} />
 
-      {/* App — Payroll Suite */}
-      <Route path="/app/payroll" component={AppPayroll} />
-      <Route path="/app/payroll-hub" component={AppPayrollHub} />
-      <Route path="/app/benefits" component={AppBenefits} />
+      {/* ══════════════════════════════════════════════
+          MANAGER PLATFORM — /manager/*
+          Team-centric: approvals, goals, reviews, feedback
+         ══════════════════════════════════════════════ */}
+      <Route path="/manager" component={ManagerDashboardPage} />
+      <Route path="/manager/dashboard" component={ManagerDashboardPage} />
+      <Route path="/manager/team" component={ManagerTeamPage} />
+      <Route path="/manager/time-off" component={ManagerTimeOffPage} />
+      <Route path="/manager/goals" component={ManagerGoalsPage} />
+      <Route path="/manager/performance" component={ManagerPerformancePage} />
+      <Route path="/manager/feedback" component={ManagerFeedbackPage} />
 
-      {/* App — Talent Suite */}
-      <Route path="/app/hiring" component={AppHiring} />
-      <Route path="/app/learning" component={AppLearning} />
-      <Route path="/app/performance" component={AppPerformance} />
-      <Route path="/app/compensation" component={AppCompensation} />
+      {/* ══════════════════════════════════════════════
+          EMPLOYEE PLATFORM — /employee/*
+          Self-service: profile, leave, learning, goals, pay
+         ══════════════════════════════════════════════ */}
+      <Route path="/employee" component={EmployeeDashboardPage} />
+      <Route path="/employee/dashboard" component={EmployeeDashboardPage} />
+      <Route path="/employee/profile" component={EmployeeProfilePage} />
+      <Route path="/employee/time-off" component={EmployeeTimeOffPage} />
+      <Route path="/employee/learning" component={EmployeeLearningPage} />
+      <Route path="/employee/goals" component={EmployeeGoalsPage} />
+      <Route path="/employee/benefits" component={EmployeeBenefitsPage} />
+      <Route path="/employee/feedback" component={EmployeeFeedbackPage} />
+      <Route path="/employee/payslips" component={EmployeePayslipsPage} />
+      <Route path="/employee/onboarding" component={EmployeeOnboardingPage} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

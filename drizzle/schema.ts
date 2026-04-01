@@ -9,7 +9,8 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }).notNull().unique(),
   name: text("name"),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["super_admin", "company_owner", "admin", "employee"]).default("employee").notNull(),
+  role: mysqlEnum("role", ["super_admin", "company_owner", "admin", "hr_admin", "manager", "employee"]).default("employee").notNull(),
+  profileCompleted: boolean("profileCompleted").default(false),
   companyId: int("companyId"), // NULL for super_admin or during signup
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -479,6 +480,142 @@ export const announcements = mysqlTable("announcements", {
 
 export type Announcement = typeof announcements.$inferSelect;
 export type InsertAnnouncement = typeof announcements.$inferInsert;
+
+// ============================================================
+// DEPARTMENTS TABLE
+// ============================================================
+export const departments = mysqlTable("departments", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  parentDepartmentId: int("parentDepartmentId"),
+  headId: int("headId"), // employee profile id of dept head
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Department = typeof departments.$inferSelect;
+export type InsertDepartment = typeof departments.$inferInsert;
+
+// ============================================================
+// CUSTOM ROLES TABLE (RBAC)
+// ============================================================
+export const customRoles = mysqlTable("custom_roles", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  isSystem: boolean("isSystem").default(false), // built-in roles can't be deleted
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CustomRole = typeof customRoles.$inferSelect;
+export type InsertCustomRole = typeof customRoles.$inferInsert;
+
+// ============================================================
+// PERMISSIONS TABLE (RBAC)
+// ============================================================
+export const permissions = mysqlTable("permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  module: varchar("module", { length: 100 }).notNull(), // e.g. 'employees', 'payroll', 'hiring'
+  action: varchar("action", { length: 100 }).notNull(), // e.g. 'view', 'create', 'edit', 'delete', 'approve'
+  description: text("description"),
+});
+
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = typeof permissions.$inferInsert;
+
+// ============================================================
+// ROLE PERMISSIONS JUNCTION TABLE
+// ============================================================
+export const rolePermissions = mysqlTable("role_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  roleId: int("roleId").notNull(),
+  permissionId: int("permissionId").notNull(),
+});
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = typeof rolePermissions.$inferInsert;
+
+// ============================================================
+// USER ROLE ASSIGNMENTS TABLE
+// ============================================================
+export const userRoleAssignments = mysqlTable("user_role_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  customRoleId: int("customRoleId").notNull(),
+  companyId: int("companyId").notNull(),
+  assignedAt: timestamp("assignedAt").defaultNow().notNull(),
+});
+
+export type UserRoleAssignment = typeof userRoleAssignments.$inferSelect;
+export type InsertUserRoleAssignment = typeof userRoleAssignments.$inferInsert;
+
+// ============================================================
+// EMPLOYEE PERSONAL DETAILS TABLE (Self-Service Profile)
+// ============================================================
+export const employeePersonalDetails = mysqlTable("employee_personal_details", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  dateOfBirth: timestamp("dateOfBirth"),
+  gender: varchar("gender", { length: 20 }),
+  nationality: varchar("nationality", { length: 100 }),
+  maritalStatus: varchar("maritalStatus", { length: 50 }),
+  emergencyContactName: varchar("emergencyContactName", { length: 255 }),
+  emergencyContactPhone: varchar("emergencyContactPhone", { length: 20 }),
+  emergencyContactRelation: varchar("emergencyContactRelation", { length: 100 }),
+  bankName: varchar("bankName", { length: 255 }),
+  bankAccountNumber: varchar("bankAccountNumber", { length: 100 }),
+  bankRoutingNumber: varchar("bankRoutingNumber", { length: 100 }),
+  taxId: varchar("taxId", { length: 100 }),
+  address: text("address"),
+  preferences: json("preferences"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmployeePersonalDetail = typeof employeePersonalDetails.$inferSelect;
+export type InsertEmployeePersonalDetail = typeof employeePersonalDetails.$inferInsert;
+
+// ============================================================
+// INVITATIONS TABLE
+// ============================================================
+export const invitations = mysqlTable("invitations", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  role: mysqlEnum("role", ["admin", "hr_admin", "manager", "employee"]).default("employee").notNull(),
+  departmentId: int("departmentId"),
+  managerId: int("managerId"),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  status: mysqlEnum("status", ["pending", "accepted", "expired", "revoked"]).default("pending").notNull(),
+  invitedBy: int("invitedBy").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  acceptedAt: timestamp("acceptedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Invitation = typeof invitations.$inferSelect;
+export type InsertInvitation = typeof invitations.$inferInsert;
+
+// ============================================================
+// FEEDBACK TABLE (1:1 Meetings / Peer Feedback)
+// ============================================================
+export const feedbacks = mysqlTable("feedbacks", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  fromEmployeeId: int("fromEmployeeId").notNull(),
+  toEmployeeId: int("toEmployeeId").notNull(),
+  type: mysqlEnum("type", ["praise", "constructive", "one_on_one", "peer_review"]).default("praise").notNull(),
+  content: text("content").notNull(),
+  isPrivate: boolean("isPrivate").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Feedback = typeof feedbacks.$inferSelect;
+export type InsertFeedback = typeof feedbacks.$inferInsert;
 
 // ============================================================
 // DEMO LEADS TABLE (Legacy)

@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
+import { publicProcedure, router, protectedProcedure, adminProcedure, hrAdminProcedure, managerProcedure } from "./_core/trpc";
 import { 
   createDemoLead, createCompany, getCompanyById, updateCompany,
   createSubscription, getSubscriptionByCompanyId, checkSeatAvailability,
@@ -25,6 +25,14 @@ import {
   createAnnouncement, getAnnouncementsByCompanyId, updateAnnouncement, deleteAnnouncement,
   upsertUser, getUserById,
   getSsoConfigsByCompanyId, getSsoConfigById, createSsoConfig, updateSsoConfig, deleteSsoConfig,
+  createDepartment, getDepartmentsByCompanyId, updateDepartment, deleteDepartment,
+  createCustomRole, getCustomRolesByCompanyId, updateCustomRole, deleteCustomRole,
+  getAllPermissions, assignPermissionToRole, removePermissionFromRole, getPermissionsByRoleId,
+  assignRoleToUser, getUserRoleAssignments, removeRoleFromUser,
+  upsertPersonalDetails, getPersonalDetailsByEmployeeId,
+  createInvitation, getInvitationsByCompanyId, getInvitationByToken, updateInvitation,
+  createFeedback, getFeedbackByEmployeeId, getFeedbackByCompanyId,
+  getEmployeeByUserId, getEmployeesByManagerId, updateUserRole, updateUserProfileCompleted, getUsersByCompanyId,
 } from "./db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -643,6 +651,154 @@ export const appRouter = router({
       }),
     delete: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await deleteSsoConfig(input.id);
+      return { success: true };
+    }),
+  }),
+
+  // ============================================================
+  // DEPARTMENT ROUTER
+  // ============================================================
+  department: router({
+    create: companyProcedure
+      .input(z.object({ name: z.string().min(1), description: z.string().optional(), parentDepartmentId: z.number().optional(), headId: z.number().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        const result = await createDepartment({ companyId: ctx.companyId, ...input });
+        return { success: true, departmentId: result.insertId };
+      }),
+    list: companyProcedure.query(async ({ ctx }) => getDepartmentsByCompanyId(ctx.companyId)),
+    update: companyProcedure.input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), parentDepartmentId: z.number().optional(), headId: z.number().optional() }))
+      .mutation(async ({ input }) => { const { id, ...updates } = input; await updateDepartment(id, updates); return { success: true }; }),
+    delete: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await deleteDepartment(input.id); return { success: true }; }),
+  }),
+
+  // ============================================================
+  // RBAC ROUTER
+  // ============================================================
+  rbac: router({
+    createRole: companyProcedure
+      .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        const result = await createCustomRole({ companyId: ctx.companyId, ...input });
+        return { success: true, roleId: result.insertId };
+      }),
+    listRoles: companyProcedure.query(async ({ ctx }) => getCustomRolesByCompanyId(ctx.companyId)),
+    updateRole: companyProcedure.input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional() }))
+      .mutation(async ({ input }) => { const { id, ...updates } = input; await updateCustomRole(id, updates); return { success: true }; }),
+    deleteRole: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await deleteCustomRole(input.id); return { success: true }; }),
+    listPermissions: protectedProcedure.query(async () => getAllPermissions()),
+    assignPermission: companyProcedure.input(z.object({ roleId: z.number(), permissionId: z.number() }))
+      .mutation(async ({ input }) => { await assignPermissionToRole(input); return { success: true }; }),
+    removePermission: companyProcedure.input(z.object({ roleId: z.number(), permissionId: z.number() }))
+      .mutation(async ({ input }) => { await removePermissionFromRole(input.roleId, input.permissionId); return { success: true }; }),
+    getRolePermissions: companyProcedure.input(z.object({ roleId: z.number() })).query(async ({ input }) => getPermissionsByRoleId(input.roleId)),
+    assignRoleToUser: companyProcedure.input(z.object({ userId: z.number(), customRoleId: z.number() }))
+      .mutation(async ({ input, ctx }) => { await assignRoleToUser({ ...input, companyId: ctx.companyId }); return { success: true }; }),
+    getUserRoles: companyProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => getUserRoleAssignments(input.userId)),
+    removeRoleFromUser: companyProcedure.input(z.object({ userId: z.number(), roleId: z.number() }))
+      .mutation(async ({ input }) => { await removeRoleFromUser(input.userId, input.roleId); return { success: true }; }),
+  }),
+
+  // ============================================================
+  // PERSONAL DETAILS ROUTER (Employee Self-Service)
+  // ============================================================
+  personalDetails: router({
+    get: protectedProcedure.input(z.object({ employeeId: z.number() })).query(async ({ input }) => {
+      return (await getPersonalDetailsByEmployeeId(input.employeeId)) || null;
+    }),
+    upsert: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        dateOfBirth: z.string().optional(), gender: z.string().optional(), nationality: z.string().optional(),
+        maritalStatus: z.string().optional(), emergencyContactName: z.string().optional(),
+        emergencyContactPhone: z.string().optional(), emergencyContactRelation: z.string().optional(),
+        bankName: z.string().optional(), bankAccountNumber: z.string().optional(),
+        bankRoutingNumber: z.string().optional(), taxId: z.string().optional(), address: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const data: any = { ...input };
+        if (input.dateOfBirth) data.dateOfBirth = new Date(input.dateOfBirth);
+        await upsertPersonalDetails(data);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================
+  // INVITATION ROUTER
+  // ============================================================
+  invitation: router({
+    create: companyProcedure
+      .input(z.object({
+        email: z.string().email(), role: z.enum(["admin", "hr_admin", "manager", "employee"]).optional(),
+        departmentId: z.number().optional(), managerId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        const result = await createInvitation({
+          companyId: ctx.companyId, email: input.email, role: input.role || "employee",
+          departmentId: input.departmentId, managerId: input.managerId,
+          token, invitedBy: ctx.user.id, expiresAt,
+        });
+        return { success: true, invitationId: result.insertId, token };
+      }),
+    list: companyProcedure.query(async ({ ctx }) => getInvitationsByCompanyId(ctx.companyId)),
+    revoke: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await updateInvitation(input.id, { status: "revoked" as any });
+      return { success: true };
+    }),
+    accept: protectedProcedure.input(z.object({ token: z.string() })).mutation(async ({ input, ctx }) => {
+      const invitation = await getInvitationByToken(input.token);
+      if (!invitation) throw new TRPCError({ code: "NOT_FOUND", message: "Invalid invitation" });
+      if (invitation.status !== "pending") throw new TRPCError({ code: "BAD_REQUEST", message: "Invitation already used" });
+      if (new Date() > invitation.expiresAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Invitation expired" });
+      // Update user with company and role
+      await upsertUser({ openId: ctx.user.openId, email: ctx.user.email, role: invitation.role, companyId: invitation.companyId });
+      await updateInvitation(invitation.id, { status: "accepted" as any, acceptedAt: new Date() });
+      return { success: true, companyId: invitation.companyId, role: invitation.role };
+    }),
+  }),
+
+  // ============================================================
+  // FEEDBACK ROUTER
+  // ============================================================
+  feedback: router({
+    create: companyProcedure
+      .input(z.object({
+        fromEmployeeId: z.number(), toEmployeeId: z.number(),
+        type: z.enum(["praise", "constructive", "one_on_one", "peer_review"]).optional(),
+        content: z.string().min(1), isPrivate: z.boolean().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const result = await createFeedback({ companyId: ctx.companyId, ...input, type: input.type || "praise" });
+        return { success: true, feedbackId: result.insertId };
+      }),
+    listByEmployee: protectedProcedure.input(z.object({ employeeId: z.number() })).query(async ({ input }) => getFeedbackByEmployeeId(input.employeeId)),
+    listByCompany: companyProcedure.query(async ({ ctx }) => getFeedbackByCompanyId(ctx.companyId)),
+  }),
+
+  // ============================================================
+  // USER MANAGEMENT ROUTER (Admin)
+  // ============================================================
+  userManagement: router({
+    listUsers: companyProcedure.query(async ({ ctx }) => getUsersByCompanyId(ctx.companyId)),
+    updateRole: companyProcedure
+      .input(z.object({ userId: z.number(), role: z.enum(["admin", "hr_admin", "manager", "employee"]) }))
+      .mutation(async ({ input }) => {
+        await updateUserRole(input.userId, input.role);
+        return { success: true };
+      }),
+    getMyEmployee: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) return null;
+      return (await getEmployeeByUserId(ctx.user.id)) || null;
+    }),
+    getMyTeam: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) return [];
+      const myEmployee = await getEmployeeByUserId(ctx.user.id);
+      if (!myEmployee) return [];
+      return getEmployeesByManagerId(myEmployee.id);
+    }),
+    completeProfile: protectedProcedure.mutation(async ({ ctx }) => {
+      await updateUserProfileCompleted(ctx.user.id, true);
       return { success: true };
     }),
   }),

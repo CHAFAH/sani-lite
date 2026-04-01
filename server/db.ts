@@ -743,3 +743,251 @@ export async function deleteSsoConfig(id: number) {
   if (!db) throw new Error("Database not available");
   return db.delete(ssoConfigs).where(eq(ssoConfigs.id, id));
 }
+
+// ============================================================
+// DEPARTMENT QUERIES
+// ============================================================
+import { 
+  InsertDepartment, departments,
+  InsertCustomRole, customRoles,
+  InsertPermission, permissions,
+  InsertRolePermission, rolePermissions,
+  InsertUserRoleAssignment, userRoleAssignments,
+  InsertEmployeePersonalDetail, employeePersonalDetails,
+  InsertInvitation, invitations,
+  InsertFeedback, feedbacks,
+} from "../drizzle/schema";
+
+export async function createDepartment(dept: InsertDepartment) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(departments).values(dept);
+  const id = extractInsertId(result);
+  if (id > 0) return { insertId: id };
+  const created = await db.select().from(departments).orderBy(desc(departments.id)).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getDepartmentsByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(departments).where(eq(departments.companyId, companyId));
+}
+
+export async function updateDepartment(id: number, updates: Partial<InsertDepartment>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(departments).set(updates).where(eq(departments.id, id));
+}
+
+export async function deleteDepartment(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(departments).where(eq(departments.id, id));
+}
+
+// ============================================================
+// CUSTOM ROLES QUERIES (RBAC)
+// ============================================================
+export async function createCustomRole(role: InsertCustomRole) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(customRoles).values(role);
+  const id = extractInsertId(result);
+  if (id > 0) return { insertId: id };
+  const created = await db.select().from(customRoles).orderBy(desc(customRoles.id)).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getCustomRolesByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(customRoles).where(eq(customRoles.companyId, companyId));
+}
+
+export async function updateCustomRole(id: number, updates: Partial<InsertCustomRole>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(customRoles).set(updates).where(eq(customRoles.id, id));
+}
+
+export async function deleteCustomRole(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(customRoles).where(eq(customRoles.id, id));
+}
+
+// ============================================================
+// PERMISSIONS QUERIES
+// ============================================================
+export async function createPermission(perm: InsertPermission) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(permissions).values(perm);
+}
+
+export async function getAllPermissions() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(permissions);
+}
+
+export async function assignPermissionToRole(rp: InsertRolePermission) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(rolePermissions).values(rp);
+}
+
+export async function removePermissionFromRole(roleId: number, permissionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(rolePermissions).where(and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permissionId)));
+}
+
+export async function getPermissionsByRoleId(roleId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+}
+
+// ============================================================
+// USER ROLE ASSIGNMENT QUERIES
+// ============================================================
+export async function assignRoleToUser(assignment: InsertUserRoleAssignment) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(userRoleAssignments).values(assignment);
+}
+
+export async function getUserRoleAssignments(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(userRoleAssignments).where(eq(userRoleAssignments.userId, userId));
+}
+
+export async function removeRoleFromUser(userId: number, roleId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(userRoleAssignments).where(and(eq(userRoleAssignments.userId, userId), eq(userRoleAssignments.customRoleId, roleId)));
+}
+
+// ============================================================
+// EMPLOYEE PERSONAL DETAILS QUERIES
+// ============================================================
+export async function upsertPersonalDetails(details: InsertEmployeePersonalDetail) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Check if exists
+  const existing = await db.select().from(employeePersonalDetails).where(eq(employeePersonalDetails.employeeId, details.employeeId)).limit(1);
+  if (existing.length > 0) {
+    await db.update(employeePersonalDetails).set(details).where(eq(employeePersonalDetails.employeeId, details.employeeId));
+    return { id: existing[0].id };
+  }
+  const result = await db.insert(employeePersonalDetails).values(details);
+  const id = extractInsertId(result);
+  return { id: id > 0 ? id : 0 };
+}
+
+export async function getPersonalDetailsByEmployeeId(employeeId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(employeePersonalDetails).where(eq(employeePersonalDetails.employeeId, employeeId)).limit(1);
+  return result[0];
+}
+
+// ============================================================
+// INVITATION QUERIES
+// ============================================================
+export async function createInvitation(invitation: InsertInvitation) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(invitations).values(invitation);
+  const id = extractInsertId(result);
+  if (id > 0) return { insertId: id };
+  const created = await db.select().from(invitations).orderBy(desc(invitations.id)).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getInvitationsByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(invitations).where(eq(invitations.companyId, companyId)).orderBy(desc(invitations.createdAt));
+}
+
+export async function getInvitationByToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(invitations).where(eq(invitations.token, token)).limit(1);
+  return result[0];
+}
+
+export async function updateInvitation(id: number, updates: Partial<InsertInvitation>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(invitations).set(updates).where(eq(invitations.id, id));
+}
+
+// ============================================================
+// FEEDBACK QUERIES
+// ============================================================
+export async function createFeedback(feedback: InsertFeedback) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(feedbacks).values(feedback);
+  const id = extractInsertId(result);
+  if (id > 0) return { insertId: id };
+  const created = await db.select().from(feedbacks).orderBy(desc(feedbacks.id)).limit(1);
+  return { insertId: created[0]?.id || 0 };
+}
+
+export async function getFeedbackByEmployeeId(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(feedbacks).where(eq(feedbacks.toEmployeeId, employeeId)).orderBy(desc(feedbacks.createdAt));
+}
+
+export async function getFeedbackByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(feedbacks).where(eq(feedbacks.companyId, companyId)).orderBy(desc(feedbacks.createdAt));
+}
+
+// ============================================================
+// EMPLOYEE BY USER ID
+// ============================================================
+export async function getEmployeeByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(employeeProfiles).where(eq(employeeProfiles.userId, userId)).limit(1);
+  return result[0];
+}
+
+// ============================================================
+// EMPLOYEES BY MANAGER ID (for manager view)
+// ============================================================
+export async function getEmployeesByManagerId(managerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(employeeProfiles).where(eq(employeeProfiles.managerId, managerId));
+}
+
+// ============================================================
+// UPDATE USER ROLE
+// ============================================================
+export async function updateUserRole(userId: number, role: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users).set({ role: role as any }).where(eq(users.id, userId));
+}
+
+export async function updateUserProfileCompleted(userId: number, completed: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users).set({ profileCompleted: completed }).where(eq(users.id, userId));
+}
+
+export async function getUsersByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users).where(eq(users.companyId, companyId));
+}
