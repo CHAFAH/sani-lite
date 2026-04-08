@@ -1096,7 +1096,7 @@ export async function getBudgetsByCompanyId(companyId: number) {
 export async function updateBudgetSpent(budgetId: number, amount: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(budgets).set({ spent: amount }).where(eq(budgets.id, budgetId));
+  return db.update(budgets).set({ spent: amount as any }).where(eq(budgets.id, budgetId));
 }
 
 // ============================================================
@@ -1213,10 +1213,10 @@ export async function getPredictionsByEmployeeId(employeeId: number) {
   return db.select().from(predictions).where(eq(predictions.employeeId, employeeId));
 }
 
-export async function updatePredictionStatus(predictionId: number, status: string) {
+export async function updatePredictionStatus(predictionId: number, status: "active" | "archived" | "addressed") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(predictions).set({ status }).where(eq(predictions.id, predictionId));
+  return db.update(predictions).set({ status: status as any }).where(eq(predictions.id, predictionId));
 }
 
 // Recommendations
@@ -1299,10 +1299,10 @@ export async function getWebhooksByCompanyId(companyId: number) {
   return db.select().from(webhooks).where(eq(webhooks.companyId, companyId));
 }
 
-export async function updateWebhookStatus(webhookId: number, status: string) {
+export async function updateWebhookStatus(webhookId: number, status: "active" | "inactive") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(webhooks).set({ status }).where(eq(webhooks.id, webhookId));
+  return db.update(webhooks).set({ status: status as any }).where(eq(webhooks.id, webhookId));
 }
 
 // Webhook Events
@@ -1335,16 +1335,16 @@ export async function createMarketplaceApp(data: any) {
   return extractInsertId(result);
 }
 
-export async function getMarketplaceApps(status: string = "published") {
+export async function getMarketplaceApps(status: "draft" | "published" | "deprecated" = "published") {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(marketplaceApps).where(eq(marketplaceApps.status, status));
+  return db.select().from(marketplaceApps).where(eq(marketplaceApps.status, status as any));
 }
 
-export async function updateMarketplaceAppStatus(appId: number, status: string) {
+export async function updateMarketplaceAppStatus(appId: number, status: "draft" | "published" | "deprecated") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(marketplaceApps).set({ status }).where(eq(marketplaceApps.id, appId));
+  return db.update(marketplaceApps).set({ status: status as any }).where(eq(marketplaceApps.id, appId));
 }
 
 // Marketplace Installations

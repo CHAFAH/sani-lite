@@ -55,7 +55,8 @@ import AdminDepartmentsPage from "./pages/admin/AdminDepartmentsPage";
 import AdminInvitationsPage from "./pages/admin/AdminInvitationsPage";
 import AdminRbacPage from "./pages/admin/AdminRbacPage";
 import AdminTimeOffPage from "./pages/admin/AdminTimeOffPage";
-import AdminPayrollPage from "./pages/admin/AdminPayrollPage";
+import AdminFinanceOSPage from "@/pages/admin/AdminFinanceOSPage";
+import EmployeeExpensesPage from "@/pages/employee/EmployeeExpensesPage";
 import AdminPayrollHubPage from "./pages/admin/AdminPayrollHubPage";
 import {
   AdminBenefitsPage,
@@ -68,7 +69,6 @@ import {
   AdminAnalyticsPage,
   AdminWorkflowsPage,
   AdminSsoPage,
-  AdminCompanyPage,
 } from "./pages/admin/AdminModulePages";
 
 // Manager Platform pages
@@ -167,7 +167,8 @@ function Router() {
       <Route path="/admin/analytics" component={AdminAnalyticsPage} />
       <Route path="/admin/workflows" component={AdminWorkflowsPage} />
       <Route path="/admin/sso" component={AdminSsoPage} />
-      <Route path="/admin/company" component={AdminCompanyPage} />
+        <Route path="/admin/company" component={AdminCompanyPage} />
+        <Route path="/admin/finance" component={AdminFinanceOSPage} />
 
       {/* ══════════════════════════════════════════════
           MANAGER PLATFORM — /manager/*
@@ -193,7 +194,8 @@ function Router() {
       <Route path="/employee/goals" component={EmployeeGoalsPage} />
       <Route path="/employee/benefits" component={EmployeeBenefitsPage} />
       <Route path="/employee/feedback" component={EmployeeFeedbackPage} />
-      <Route path="/employee/payslips" component={EmployeePayslipsPage} />
+        <Route path="/employee/payslips" component={EmployeePayslipsPage} />
+        <Route path="/employee/expenses" component={EmployeeExpensesPage} />
       <Route path="/employee/onboarding" component={EmployeeOnboardingPage} />
 
       <Route path="/404" component={NotFound} />
