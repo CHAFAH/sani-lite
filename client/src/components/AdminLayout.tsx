@@ -9,8 +9,8 @@ import {
   LayoutDashboard, Users, Wallet, BarChart3, Settings, HelpCircle,
   ChevronLeft, Bell, Search, CalendarDays, GitBranch, Globe, Receipt,
   Heart, Briefcase, GraduationCap, Star, DollarSign, Shield, ChevronDown,
-  Building2, UserCircle, Mail, FolderTree, Lock, Megaphone, Target,
-  UserPlus, FileText, LogOut,
+  Building2, UserCircle, Mail, Lock, Megaphone, Target,
+  FileText, LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -41,8 +41,7 @@ const navGroups: NavGroup[] = [
     label: "People",
     items: [
       { label: "Employees", icon: Users, href: "/admin/employees" },
-      { label: "Departments", icon: FolderTree, href: "/admin/departments" },
-      { label: "Invitations", icon: UserPlus, href: "/admin/invitations" },
+      { label: "Org Chart", icon: GitBranch, href: "/admin/org-chart" },
       { label: "Time Off", icon: CalendarDays, href: "/admin/time-off" },
     ],
   },
