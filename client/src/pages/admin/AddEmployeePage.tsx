@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { useLocation, useRoute } from "wouter";
+import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import AdminLayout from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Plus, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 interface EditableDropdownProps {
@@ -33,9 +33,8 @@ function EditableDropdown({
   onAddNew,
   placeholder,
 }: EditableDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [newValue, setNewValue] = useState("");
   const [showAddNew, setShowAddNew] = useState(false);
+  const [newValue, setNewValue] = useState("");
 
   return (
     <div className="space-y-2">
@@ -102,23 +101,18 @@ function EditableDropdown({
   );
 }
 
-export default function EditEmployeePage() {
+export default function AddEmployeePage() {
   const [, setLocation] = useLocation();
-  const [match, params] = useRoute("/admin/employees/:id/edit");
-  const employeeId = params?.id ? parseInt(params.id) : null;
-
   const { data: employees = [] } = trpc.employee.list.useQuery();
-  const updateMut = trpc.employee.update.useMutation({
-    onSuccess: () => {
-      toast.success("Employee updated successfully");
-      setLocation(`/admin/employees/${employeeId}`);
+  const createMut = trpc.employee.create.useMutation({
+    onSuccess: (newEmployee) => {
+      toast.success("Employee created and invitation sent!");
+      setLocation("/admin/employees");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update employee");
+      toast.error(error.message || "Failed to create employee");
     },
   });
-
-  const employee = employees.find((e: any) => e.id === employeeId);
 
   // Get unique values for dropdowns
   const departments = useMemo(
@@ -158,31 +152,6 @@ export default function EditEmployeePage() {
   const [newDepts, setNewDepts] = useState<string[]>([]);
   const [newPositions, setNewPositions] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (employee) {
-      const managerEmployee = employee.managerId
-        ? employees.find((e: any) => e.id === employee.managerId)
-        : null;
-      setForm({
-        firstName: (employee as any).firstName || "",
-        lastName: (employee as any).lastName || "",
-        email: (employee as any).email || "",
-        phone: (employee as any).phone || "",
-        country: (employee as any).country || "",
-        city: (employee as any).city || "",
-        position: (employee as any).position || "",
-        department: (employee as any).department || "",
-        employmentType: ((employee as any).employmentType || "full_time") as any,
-        salary: (employee as any).salary || "",
-        currency: (employee as any).currency || "USD",
-        role: (employee as any).role || "employee",
-        manager: managerEmployee
-          ? `${(managerEmployee as any).firstName} ${(managerEmployee as any).lastName}`
-          : "",
-      });
-    }
-  }, [employee, employees]);
-
   const handleAddDepartment = (dept: string) => {
     setNewDepts([...newDepts, dept]);
     setForm({ ...form, department: dept });
@@ -193,9 +162,16 @@ export default function EditEmployeePage() {
     setForm({ ...form, position: pos });
   };
 
-  const handleSave = async () => {
+  const handleCreate = async () => {
     if (!form.firstName || !form.lastName || !form.email) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
 
@@ -203,10 +179,10 @@ export default function EditEmployeePage() {
       (e: any) => `${e.firstName} ${e.lastName}` === form.manager
     );
 
-    updateMut.mutate({
-      id: employeeId!,
+    createMut.mutate({
       firstName: form.firstName,
       lastName: form.lastName,
+      email: form.email,
       phone: form.phone || undefined,
       country: form.country || undefined,
       city: form.city || undefined,
@@ -217,28 +193,9 @@ export default function EditEmployeePage() {
       currency: form.currency,
       role: form.role as any,
       managerId: selectedManager?.id || undefined,
+      status: "invited",
     } as any);
   };
-
-  if (!match || !employeeId) {
-    return (
-      <AdminLayout>
-        <div className="text-center py-12">
-          <p className="text-slate-500">Employee not found</p>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  if (!employee) {
-    return (
-      <AdminLayout>
-        <div className="text-center py-12">
-          <p className="text-slate-500">Loading...</p>
-        </div>
-      </AdminLayout>
-    );
-  }
 
   const allDepartments = Array.from(new Set([...departments, ...newDepts]));
   const allPositions = Array.from(new Set([...positions, ...newPositions]));
@@ -251,18 +208,21 @@ export default function EditEmployeePage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setLocation(`/admin/employees/${employeeId}`)}
+            onClick={() => setLocation("/admin/employees")}
           >
             <ArrowLeft size={16} className="mr-2" />
             Back
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Employee</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Add New Employee</h1>
         </div>
 
         {/* Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Employee Information</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Mail size={20} />
+              Employee Information
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Personal Information */}
@@ -291,9 +251,9 @@ export default function EditEmployeePage() {
                     placeholder="Doe"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="col-span-2 space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium">
-                    Email *
+                    Company Email * (Invitation will be sent here)
                   </Label>
                   <Input
                     id="email"
@@ -345,7 +305,7 @@ export default function EditEmployeePage() {
               <div className="grid grid-cols-2 gap-4">
                 <EditableDropdown
                   label="Department"
-                  value={form.department || ""}
+                  value={form.department}
                   options={allDepartments}
                   onValueChange={(value) => setForm({ ...form, department: value })}
                   onAddNew={handleAddDepartment}
@@ -353,7 +313,7 @@ export default function EditEmployeePage() {
                 />
                 <EditableDropdown
                   label="Position"
-                  value={form.position || ""}
+                  value={form.position}
                   options={allPositions}
                   onValueChange={(value) => setForm({ ...form, position: value })}
                   onAddNew={handleAddPosition}
@@ -413,7 +373,7 @@ export default function EditEmployeePage() {
             <div>
               <h3 className="font-semibold text-slate-900 mb-4">Compensation</h3>
               <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="salary" className="text-sm font-medium">
                     Salary
                   </Label>
@@ -445,19 +405,26 @@ export default function EditEmployeePage() {
               </div>
             </div>
 
+            {/* Info Box */}
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+              <p className="text-sm text-teal-900">
+                <strong>Email Invitation:</strong> An invitation email will be sent to <strong>{form.email || "the employee email"}</strong> with a link to accept and join the company. They will then be taken to their employee profile to complete their setup.
+              </p>
+            </div>
+
             {/* Action Buttons */}
             <div className="flex gap-3 pt-6 border-t">
               <Button
-                onClick={handleSave}
-                disabled={updateMut.isPending}
+                onClick={handleCreate}
+                disabled={createMut.isPending}
                 className="bg-teal-600 hover:bg-teal-700"
               >
-                {updateMut.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
-                Save Changes
+                {createMut.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+                Create Employee & Send Invite
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setLocation(`/admin/employees/${employeeId}`)}
+                onClick={() => setLocation("/admin/employees")}
               >
                 Cancel
               </Button>

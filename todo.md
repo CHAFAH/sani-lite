@@ -318,3 +318,17 @@
 - [x] Add visual indicators for different roles (Admin, Manager, Employee)
 - [x] Show team member count per manager
 - [x] Add export org chart as image/PDF
+
+
+## Phase 19: Employee Management UX Redesign
+
+- [x] Rebuild edit employee page as single form (not tabs)
+- [x] Add autofill dropdowns for department, position, role, manager
+- [x] Add "Create new" option in dropdowns for items not in list
+- [x] Rebuild add employee as single long page (not multi-step)
+- [x] Implement email invite sending on employee creation
+- [x] Create auto-join workflow when employee accepts email invite
+- [x] Remove Departments page from navigation
+- [x] Remove Invitations page from navigation
+- [x] Update employee profile to single-page read-only view
+- [x] Test email invite and join flow
