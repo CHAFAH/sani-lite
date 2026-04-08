@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, CalendarDays, Briefcase, Star, TrendingUp, Clock, AlertTriangle, CheckCircle2, ArrowUpRight, DollarSign, GraduationCap, Target } from "lucide-react";
+import { Users, CalendarDays, Briefcase, Star, TrendingUp, Clock, AlertTriangle, CheckCircle2, ArrowUpRight, DollarSign, GraduationCap, Target, GitBranch } from "lucide-react";
 import { Link } from "wouter";
 
 function StatCard({ title, value, icon: Icon, change, color }: { title: string; value: string | number; icon: React.ElementType; change?: string; color: string }) {
@@ -126,8 +126,9 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <Link href="/admin/employees"><Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 hover:border-indigo-300 hover:bg-indigo-50"><Users size={20} className="text-indigo-500" /><span className="text-xs">Manage Employees</span></Button></Link>
+          <Link href="/admin/org-chart"><Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 hover:border-teal-300 hover:bg-teal-50"><GitBranch size={20} className="text-teal-500" /><span className="text-xs">Org Chart</span></Button></Link>
           <Link href="/admin/hiring"><Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 hover:border-emerald-300 hover:bg-emerald-50"><Briefcase size={20} className="text-emerald-500" /><span className="text-xs">Hiring Pipeline</span></Button></Link>
           <Link href="/admin/payroll"><Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 hover:border-amber-300 hover:bg-amber-50"><DollarSign size={20} className="text-amber-500" /><span className="text-xs">Run Payroll</span></Button></Link>
           <Link href="/admin/performance"><Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2 hover:border-purple-300 hover:bg-purple-50"><Star size={20} className="text-purple-500" /><span className="text-xs">Performance</span></Button></Link>

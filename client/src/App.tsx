@@ -53,6 +53,7 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminEmployeesPage from "./pages/admin/AdminEmployeesPage";
 import AdminEmployeeProfilePage from "./pages/admin/EmployeeProfilePage";
 import EditEmployeePage from "./pages/admin/EditEmployeePage";
+import AdminOrgChartPage from "./pages/admin/AdminOrgChartPage";
 import AddEmployeeFlow from "./pages/admin/AddEmployeeFlow";
 import AdminDepartmentsPage from "./pages/admin/AdminDepartmentsPage";
 import AdminInvitationsPage from "./pages/admin/AdminInvitationsPage";
@@ -157,6 +158,7 @@ function Router() {
       <Route path="/admin/employees/new" component={AddEmployeeFlow} />
       <Route path="/admin/employees/:id/edit" component={EditEmployeePage} />
       <Route path="/admin/employees/:id" component={AdminEmployeeProfilePage} />
+      <Route path="/admin/org-chart" component={AdminOrgChartPage} />
       <Route path="/admin/employees/:id/change-role" component={AdminEmployeeProfilePage} />
       <Route path="/admin/employees/:id/assign-manager" component={AdminEmployeeProfilePage} />
       <Route path="/admin/departments" component={AdminDepartmentsPage} />

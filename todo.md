@@ -304,3 +304,17 @@
 - [x] Test RBAC role assignment
 - [x] Test manager assignment and org hierarchy
 - [x] Test all action menu items
+
+
+## Phase 18: Organizational Chart
+
+- [x] Build org chart component with interactive visualization
+- [x] Create org chart page at /admin/org-chart
+- [x] Implement hierarchical tree layout showing reporting structure
+- [x] Add department filter to show specific teams
+- [x] Implement search to find employees in org chart
+- [x] Add click-to-view-profile functionality
+- [x] Implement expand/collapse for large teams
+- [x] Add visual indicators for different roles (Admin, Manager, Employee)
+- [x] Show team member count per manager
+- [x] Add export org chart as image/PDF
