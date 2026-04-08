@@ -9,6 +9,21 @@ function getQueryParam(req: Request, key: string): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function getDashboardPathForRole(role: string): string {
+  switch (role) {
+    case "super_admin":
+    case "company_owner":
+    case "admin":
+    case "hr_admin":
+      return "/admin";
+    case "manager":
+      return "/manager";
+    case "employee":
+    default:
+      return "/employee";
+  }
+}
+
 export function registerOAuthRoutes(app: Express) {
   // ── Dev bypass login (development only) ──────────────────────────────────
   if (process.env.NODE_ENV !== "production") {
@@ -98,7 +113,15 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
+<<<<<<< Updated upstream
       res.redirect(302, "/admin/dashboard");
+=======
+      // Redirect to the correct dashboard based on user role
+      const user = await db.getUserByOpenId(userInfo.openId);
+      const redirectPath = user ? getDashboardPathForRole(user.role) : "/admin";
+
+      res.redirect(302, redirectPath);
+>>>>>>> Stashed changes
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed" });

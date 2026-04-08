@@ -75,6 +75,11 @@ function Hero() {
                 Get Started Free
               </Button>
             </Link>
+            <Link href="/demo">
+              <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base">
+                Try Demo
+              </Button>
+            </Link>
             <Link href="/book-demo">
               <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base">
                 Book a Demo
@@ -383,6 +388,11 @@ function CTA() {
             <Link href="/login">
               <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white rounded-2xl px-8 py-6 text-base shadow-lg shadow-teal-600/20">
                 Get Started Free
+              </Button>
+            </Link>
+            <Link href="/demo">
+              <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 text-base">
+                Try Demo
               </Button>
             </Link>
             <Link href="/book-demo">

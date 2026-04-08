@@ -42,7 +42,8 @@ import HelpCenter from "./pages/resources/HelpCenter";
 import ApiDocs from "./pages/resources/ApiDocs";
 
 // Auth
-import Login from "./pages/Login";
+import Login from "@/pages/Login";
+import DemoMode from "@/pages/DemoMode";
 
 // Company Onboarding
 import CompanyOnboarding from "./pages/app/CompanyOnboarding";
@@ -138,6 +139,7 @@ function Router() {
 
       {/* ── Auth ── */}
       <Route path="/login" component={Login} />
+      <Route path="/demo" component={DemoMode} />
 
       {/* ── Company Onboarding ── */}
       <Route path="/onboarding" component={CompanyOnboarding} />

@@ -168,3 +168,10 @@
 ## Phase 14: Bug Fixes
 - [x] Fix 404 error on /admin routes (was stale published version)
 - [x] Fix 404 error on login route (added /login page + fixed all /app links)
+
+## Phase 15: Post-Login Redirect & Demo Mode
+- [x] Fix OAuth callback to redirect to role-based dashboard after login
+- [x] Create demo/bypass mode with fake company seed data (DemoMode.tsx page)
+- [x] Build demo role switcher to test Admin/Manager/Employee dashboards
+- [x] Add "Try Demo" button to landing page linking to /demo
+- [x] Test all three dashboards with demo data
