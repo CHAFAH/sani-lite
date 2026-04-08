@@ -363,3 +363,55 @@
 - [x] Make text fields editable in place (name, email, phone, city, position)
 - [x] Implement save mutation to persist changes
 - [x] Test inline editing flow
+
+## Phase 23: Payroll & Benefits Module (Enterprise Grade)
+
+### Global Payroll Dashboard
+- [x] Build payroll dashboard with KPIs (total payroll cost, employees paid, pending, errors)
+- [x] Multi-country payroll support with local compliance indicators
+- [x] Payroll run workflow (select employees/departments, review, approve, process)
+- [x] Automated payslip generation with salary breakdown, taxes, deductions, net pay
+- [x] Pay schedule management (weekly, biweekly, monthly, custom)
+- [x] Multi-currency salary payments display
+- [x] Payroll alerts for errors, compliance risks, missing data
+
+### Payroll Hub
+- [x] Centralized payroll management across countries and entities
+- [x] Payroll analytics by employee, department, country, role
+- [x] Audit log of all payroll actions
+- [x] Export payroll reports (PDF/Excel format)
+- [x] AI forecasting for payroll costs and budget impact
+- [x] Three-dot menu for adjustments, corrections, reversals
+
+### Benefits Administration
+- [x] Global benefits management page (healthcare, pensions, insurance, wellness)
+- [x] Benefits enrollment and management per employee
+- [x] Customizable plans for departments, roles, and countries
+- [x] Real-time eligibility checks
+- [x] Benefits tracking and reporting
+- [x] AI recommendations for optimizing cost and satisfaction
+
+### Compensation
+- [x] Salary and bonus management page
+- [x] Equity/stock options tracking
+- [x] Compensation planning workflows with approval chains
+- [x] AI-assisted compensation benchmarking
+- [x] Scenario modeling (promotions, department adjustments)
+- [x] Historical compensation tracking
+
+### Employee-Level Pages
+- [x] Employee payroll page (/admin/employees/:id with payroll section)
+- [x] Employee benefits page (benefits enrollment and usage)
+- [x] Employee compensation page (salary history, equity, bonuses)
+
+### AI Intelligence Layer
+- [x] Predict payroll budget shortfalls
+- [x] Recommend optimal benefits packages
+- [x] Detect outlier payroll adjustments
+- [x] Suggest promotions/raises based on performance
+- [x] Automated compliance risk alerts
+
+### Integration & Navigation
+- [x] Add all new routes to App.tsx
+- [x] Update admin sidebar navigation
+- [x] Write tests for payroll and benefits features (24 tests)

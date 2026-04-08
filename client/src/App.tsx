@@ -61,19 +61,22 @@ import AdminRbacPage from "./pages/admin/AdminRbacPage";
 import AdminTimeOffPage from "./pages/admin/AdminTimeOffPage";
 import AdminFinanceOSPage from "@/pages/admin/AdminFinanceOSPage";
 import EmployeeExpensesPage from "@/pages/employee/EmployeeExpensesPage";
-import AdminPayrollHubPage from "./pages/admin/AdminPayrollHubPage";
+import AdminPayrollHubPage from "./pages/admin/AdminPayrollHubPage2";
+import AdminGlobalPayrollPage from "./pages/admin/AdminGlobalPayrollPage";
 import {
-  AdminBenefitsPage,
+
   AdminHiringPage,
   AdminLearningPage,
   AdminPerformancePage,
   AdminGoalsPage,
-  AdminCompensationPage,
+
   AdminAnnouncementsPage,
   AdminAnalyticsPage,
   AdminWorkflowsPage,
   AdminSsoPage,
 } from "./pages/admin/AdminModulePages";
+import AdminBenefitsPage from "./pages/admin/AdminBenefitsPage2";
+import AdminCompensationPage from "./pages/admin/AdminCompensationPage2";
 
 // Manager Platform pages
 import ManagerDashboardPage from "./pages/manager/ManagerDashboardPage";
@@ -92,6 +95,7 @@ import EmployeeGoalsPage from "./pages/employee/EmployeeGoalsPage";
 import EmployeeBenefitsPage from "./pages/employee/EmployeeBenefitsPage";
 import EmployeeFeedbackPage from "./pages/employee/EmployeeFeedbackPage";
 import EmployeePayslipsPage from "./pages/employee/EmployeePayslipsPage";
+import EmployeePayrollBenefitsPage from "./pages/employee/EmployeePayrollBenefitsPage";
 import EmployeeOnboardingPage from "./pages/employee/EmployeeOnboardingPage";
 
 function ScrollToTop() {
@@ -166,6 +170,7 @@ function Router() {
       <Route path="/admin/time-off" component={AdminTimeOffPage} />
       <Route path="/admin/payroll" component={AdminPayrollHubPage} />
       <Route path="/admin/payroll-hub" component={AdminPayrollHubPage} />
+      <Route path="/admin/global-payroll" component={AdminGlobalPayrollPage} />
       <Route path="/admin/benefits" component={AdminBenefitsPage} />
       <Route path="/admin/hiring" component={AdminHiringPage} />
       <Route path="/admin/learning" component={AdminLearningPage} />
@@ -203,6 +208,7 @@ function Router() {
       <Route path="/employee/benefits" component={EmployeeBenefitsPage} />
       <Route path="/employee/feedback" component={EmployeeFeedbackPage} />
         <Route path="/employee/payslips" component={EmployeePayslipsPage} />
+        <Route path="/employee/pay-benefits" component={EmployeePayrollBenefitsPage} />
         <Route path="/employee/expenses" component={EmployeeExpensesPage} />
       <Route path="/employee/onboarding" component={EmployeeOnboardingPage} />
 
