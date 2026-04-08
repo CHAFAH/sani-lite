@@ -175,3 +175,63 @@
 - [x] Build demo role switcher to test Admin/Manager/Employee dashboards
 - [x] Add "Try Demo" button to landing page linking to /demo
 - [x] Test all three dashboards with demo data
+
+## Phase 16: Company OS Expansion (HiBob Killer Features)
+
+### Finance OS
+- [ ] Add expenses table (employee, amount, category, receipt, approval status)
+- [ ] Add corporate_cards table (employee, card number, limit, balance, transactions)
+- [ ] Add budgets table (department, category, amount, period)
+- [ ] Build expense management backend (submit, approve, reimburse)
+- [ ] Build corporate card management backend
+- [ ] Build budget tracking and forecasting
+- [ ] Create Finance Dashboard frontend (expense overview, card management, budget tracking)
+- [ ] Create Expense Request page (submit, track, approve)
+- [ ] Create Corporate Cards page (manage, view transactions, set limits)
+- [ ] Create Budget Planning page (set budgets, track spending, forecasts)
+
+### IT & Identity OS
+- [ ] Add devices table (employee, device_type, serial, os, status, assigned_date)
+- [ ] Add app_provisioning table (employee, app, access_level, status, date_assigned)
+- [ ] Add access_control table (employee, resource, permission, granted_by, date)
+- [ ] Build device lifecycle management (assign, revoke, track)
+- [ ] Build app provisioning workflow (request, approve, auto-provision)
+- [ ] Build access control engine (tied to HR role changes)
+- [ ] Build auto-deprovision on offboarding
+- [ ] Create IT Dashboard frontend (device inventory, app access, pending requests)
+- [ ] Create Device Management page (assign, revoke, track)
+- [ ] Create App Provisioning page (request, approve, manage access)
+- [ ] Create Access Control page (view permissions, audit trail)
+
+### AI Intelligence Layer
+- [ ] Add predictions table (employee, prediction_type, score, date)
+- [ ] Add recommendations table (employee, recommendation_type, action, status)
+- [ ] Build attrition prediction model
+- [ ] Build promotion recommendation engine
+- [ ] Build burnout detection
+- [ ] Build org optimization suggestions
+- [ ] Build AI chat interface (query company data)
+- [ ] Create AI Intelligence Dashboard (predictions, recommendations, insights)
+- [ ] Create Attrition Risk page (identify at-risk employees, interventions)
+- [ ] Create Promotion Recommendations page (suggested promotions with reasoning)
+- [ ] Create Burnout Detection page (identify burnout risks, wellness recommendations)
+- [ ] Create AI Chat page (ask questions about company data)
+
+### Developer Platform
+- [ ] Design REST API specification (OpenAPI/Swagger)
+- [ ] Build webhook system (events: employee.created, payroll.processed, etc.)
+- [ ] Create API keys management (generate, revoke, rate limiting)
+- [ ] Build SDK (JavaScript/Python)
+- [ ] Create API documentation page
+- [ ] Create Webhooks management page (configure, test, logs)
+- [ ] Create Developer Console (API keys, webhooks, usage)
+- [ ] Create Marketplace page (integrations, apps)
+
+### Navigation & Integration
+- [ ] Update sidebar with Finance OS, IT OS, AI Intelligence, Developer sections
+- [ ] Add Finance OS to all role-based layouts
+- [ ] Add IT OS to admin/manager layouts
+- [ ] Add AI Intelligence to admin/manager layouts
+- [ ] Add Developer Platform to admin layout
+- [ ] Update main navigation structure
+- [ ] Integrate all new modules with existing employee/payroll data

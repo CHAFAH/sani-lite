@@ -24,6 +24,10 @@ import {
   InsertCompensationRecord, compensationRecords,
   InsertSalaryBand, salaryBands,
   InsertAnnouncement, announcements,
+  expenses, corporateCards, cardTransactions, budgets,
+  devices, appProvisioning, accessControl,
+  predictions, recommendations, aiChatHistory,
+  apiKeys, webhooks, webhookEvents, marketplaceApps, marketplaceInstallations,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -996,4 +1000,371 @@ export async function getUsersByCompanyId(companyId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(users).where(eq(users.companyId, companyId));
+}
+
+
+// ============================================================
+// FINANCE OS HELPERS
+// ============================================================
+
+// Expenses
+export async function createExpense(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(expenses).values(data);
+  return extractInsertId(result);
+}
+
+export async function getExpensesByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(expenses).where(eq(expenses.companyId, companyId));
+}
+
+export async function getExpensesByEmployeeId(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(expenses).where(eq(expenses.employeeId, employeeId));
+}
+
+export async function updateExpenseStatus(expenseId: number, status: string, approvedBy?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const data: any = { status };
+  if (approvedBy) data.approvedBy = approvedBy;
+  if (status === "approved") data.approvedAt = new Date();
+  if (status === "reimbursed") data.reimbursedAt = new Date();
+  return db.update(expenses).set(data).where(eq(expenses.id, expenseId));
+}
+
+// Corporate Cards
+export async function createCorporateCard(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(corporateCards).values(data);
+  return extractInsertId(result);
+}
+
+export async function getCorporateCardsByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(corporateCards).where(eq(corporateCards.companyId, companyId));
+}
+
+export async function getCorporateCardsByEmployeeId(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(corporateCards).where(eq(corporateCards.employeeId, employeeId));
+}
+
+export async function updateCardStatus(cardId: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const data: any = { status };
+  if (status === "cancelled") data.cancelledAt = new Date();
+  return db.update(corporateCards).set(data).where(eq(corporateCards.id, cardId));
+}
+
+// Card Transactions
+export async function createCardTransaction(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(cardTransactions).values(data);
+  return extractInsertId(result);
+}
+
+export async function getCardTransactionsByCardId(cardId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(cardTransactions).where(eq(cardTransactions.cardId, cardId));
+}
+
+// Budgets
+export async function createBudget(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(budgets).values(data);
+  return extractInsertId(result);
+}
+
+export async function getBudgetsByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(budgets).where(eq(budgets.companyId, companyId));
+}
+
+export async function updateBudgetSpent(budgetId: number, amount: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(budgets).set({ spent: amount }).where(eq(budgets.id, budgetId));
+}
+
+// ============================================================
+// IT & IDENTITY OS HELPERS
+// ============================================================
+
+// Devices
+export async function createDevice(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(devices).values(data);
+  return extractInsertId(result);
+}
+
+export async function getDevicesByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(devices).where(eq(devices.companyId, companyId));
+}
+
+export async function getDevicesByEmployeeId(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(devices).where(eq(devices.employeeId, employeeId));
+}
+
+export async function updateDeviceStatus(deviceId: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const data: any = { status };
+  if (status === "decommissioned") data.decommissionedAt = new Date();
+  return db.update(devices).set(data).where(eq(devices.id, deviceId));
+}
+
+// App Provisioning
+export async function createAppProvisioning(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(appProvisioning).values(data);
+  return extractInsertId(result);
+}
+
+export async function getAppProvisioningByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(appProvisioning).where(eq(appProvisioning.companyId, companyId));
+}
+
+export async function getAppProvisioningByEmployeeId(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(appProvisioning).where(eq(appProvisioning.employeeId, employeeId));
+}
+
+export async function updateAppProvisioningStatus(provisioningId: number, status: string, approvedBy?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const data: any = { status };
+  if (status === "provisioned" && approvedBy) {
+    data.approvedAt = new Date();
+    data.approvedBy = approvedBy;
+  }
+  if (status === "revoked") data.revokedAt = new Date();
+  return db.update(appProvisioning).set(data).where(eq(appProvisioning.id, provisioningId));
+}
+
+// Access Control
+export async function createAccessControl(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(accessControl).values(data);
+  return extractInsertId(result);
+}
+
+export async function getAccessControlByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(accessControl).where(eq(accessControl.companyId, companyId));
+}
+
+export async function getAccessControlByEmployeeId(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(accessControl).where(eq(accessControl.employeeId, employeeId));
+}
+
+export async function revokeAccessControl(accessId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(accessControl).set({ revokedAt: new Date() }).where(eq(accessControl.id, accessId));
+}
+
+// ============================================================
+// AI INTELLIGENCE HELPERS
+// ============================================================
+
+// Predictions
+export async function createPrediction(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(predictions).values(data);
+  return extractInsertId(result);
+}
+
+export async function getPredictionsByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(predictions).where(eq(predictions.companyId, companyId));
+}
+
+export async function getPredictionsByEmployeeId(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(predictions).where(eq(predictions.employeeId, employeeId));
+}
+
+export async function updatePredictionStatus(predictionId: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(predictions).set({ status }).where(eq(predictions.id, predictionId));
+}
+
+// Recommendations
+export async function createRecommendation(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(recommendations).values(data);
+  return extractInsertId(result);
+}
+
+export async function getRecommendationsByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(recommendations).where(eq(recommendations.companyId, companyId));
+}
+
+export async function getRecommendationsByEmployeeId(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(recommendations).where(eq(recommendations.employeeId, employeeId));
+}
+
+export async function updateRecommendationStatus(recommendationId: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const data: any = { status };
+  if (status === "completed") data.completedAt = new Date();
+  return db.update(recommendations).set(data).where(eq(recommendations.id, recommendationId));
+}
+
+// AI Chat History
+export async function createAIChatHistory(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(aiChatHistory).values(data);
+  return extractInsertId(result);
+}
+
+export async function getAIChatHistoryByCompanyId(companyId: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(aiChatHistory).where(eq(aiChatHistory.companyId, companyId)).limit(limit);
+}
+
+// ============================================================
+// DEVELOPER PLATFORM HELPERS
+// ============================================================
+
+// API Keys
+export async function createAPIKey(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(apiKeys).values(data);
+  return extractInsertId(result);
+}
+
+export async function getAPIKeysByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(apiKeys).where(eq(apiKeys.companyId, companyId));
+}
+
+export async function revokeAPIKey(keyId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(apiKeys).set({ status: "revoked", revokedAt: new Date() }).where(eq(apiKeys.id, keyId));
+}
+
+// Webhooks
+export async function createWebhook(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(webhooks).values(data);
+  return extractInsertId(result);
+}
+
+export async function getWebhooksByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(webhooks).where(eq(webhooks.companyId, companyId));
+}
+
+export async function updateWebhookStatus(webhookId: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(webhooks).set({ status }).where(eq(webhooks.id, webhookId));
+}
+
+// Webhook Events
+export async function createWebhookEvent(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(webhookEvents).values(data);
+  return extractInsertId(result);
+}
+
+export async function getWebhookEventsByWebhookId(webhookId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(webhookEvents).where(eq(webhookEvents.webhookId, webhookId));
+}
+
+export async function updateWebhookEventStatus(eventId: number, status: string, retries?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const data: any = { status };
+  if (retries !== undefined) data.retries = retries;
+  return db.update(webhookEvents).set(data).where(eq(webhookEvents.id, eventId));
+}
+
+// Marketplace Apps
+export async function createMarketplaceApp(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(marketplaceApps).values(data);
+  return extractInsertId(result);
+}
+
+export async function getMarketplaceApps(status: string = "published") {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(marketplaceApps).where(eq(marketplaceApps.status, status));
+}
+
+export async function updateMarketplaceAppStatus(appId: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(marketplaceApps).set({ status }).where(eq(marketplaceApps.id, appId));
+}
+
+// Marketplace Installations
+export async function createMarketplaceInstallation(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(marketplaceInstallations).values(data);
+  return extractInsertId(result);
+}
+
+export async function getMarketplaceInstallationsByCompanyId(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(marketplaceInstallations).where(eq(marketplaceInstallations.companyId, companyId));
+}
+
+export async function updateMarketplaceInstallationStatus(installationId: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const data: any = { status };
+  if (status === "uninstalled") data.uninstalledAt = new Date();
+  return db.update(marketplaceInstallations).set(data).where(eq(marketplaceInstallations.id, installationId));
 }

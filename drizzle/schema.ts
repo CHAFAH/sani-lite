@@ -635,3 +635,268 @@ export const demoLeads = mysqlTable("demo_leads", {
 
 export type DemoLead = typeof demoLeads.$inferSelect;
 export type InsertDemoLead = typeof demoLeads.$inferInsert;
+
+
+// ============================================================
+// FINANCE OS TABLES
+// ============================================================
+
+// Expenses
+export const expenses = mysqlTable("expenses", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  employeeId: int("employeeId").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+  category: mysqlEnum("category", ["travel", "meals", "office", "software", "other"]).notNull(),
+  description: text("description").notNull(),
+  receiptUrl: text("receiptUrl"),
+  status: mysqlEnum("status", ["draft", "submitted", "approved", "rejected", "reimbursed"]).default("draft").notNull(),
+  approvedBy: int("approvedBy"),
+  approvedAt: timestamp("approvedAt"),
+  reimbursedAt: timestamp("reimbursedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = typeof expenses.$inferInsert;
+
+// Corporate Cards
+export const corporateCards = mysqlTable("corporate_cards", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  employeeId: int("employeeId").notNull(),
+  cardNumber: varchar("cardNumber", { length: 20 }).notNull(),
+  cardholderName: varchar("cardholderName", { length: 255 }).notNull(),
+  expiryDate: varchar("expiryDate", { length: 5 }).notNull(),
+  limit: decimal("limit", { precision: 12, scale: 2 }).notNull(),
+  spent: decimal("spent", { precision: 12, scale: 2 }).default("0").notNull(),
+  status: mysqlEnum("status", ["active", "suspended", "cancelled"]).default("active").notNull(),
+  issuedAt: timestamp("issuedAt").defaultNow().notNull(),
+  cancelledAt: timestamp("cancelledAt"),
+});
+export type CorporateCard = typeof corporateCards.$inferSelect;
+export type InsertCorporateCard = typeof corporateCards.$inferInsert;
+
+// Card Transactions
+export const cardTransactions = mysqlTable("card_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  cardId: int("cardId").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+  merchant: varchar("merchant", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }),
+  description: text("description"),
+  transactionDate: timestamp("transactionDate").notNull(),
+  status: mysqlEnum("status", ["pending", "completed", "declined"]).default("completed").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CardTransaction = typeof cardTransactions.$inferSelect;
+export type InsertCardTransaction = typeof cardTransactions.$inferInsert;
+
+// Budgets
+export const budgets = mysqlTable("budgets", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  departmentId: int("departmentId"),
+  category: varchar("category", { length: 100 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  spent: decimal("spent", { precision: 12, scale: 2 }).default("0").notNull(),
+  period: mysqlEnum("period", ["monthly", "quarterly", "annual"]).default("monthly").notNull(),
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate").notNull(),
+  status: mysqlEnum("status", ["active", "archived"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Budget = typeof budgets.$inferSelect;
+export type InsertBudget = typeof budgets.$inferInsert;
+
+// ============================================================
+// IT & IDENTITY OS TABLES
+// ============================================================
+
+// Devices
+export const devices = mysqlTable("devices", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  employeeId: int("employeeId").notNull(),
+  deviceType: mysqlEnum("deviceType", ["laptop", "desktop", "phone", "tablet", "other"]).notNull(),
+  deviceName: varchar("deviceName", { length: 255 }).notNull(),
+  serialNumber: varchar("serialNumber", { length: 255 }).notNull().unique(),
+  os: varchar("os", { length: 100 }),
+  osVersion: varchar("osVersion", { length: 100 }),
+  status: mysqlEnum("status", ["active", "inactive", "lost", "decommissioned"]).default("active").notNull(),
+  assignedAt: timestamp("assignedAt").defaultNow().notNull(),
+  decommissionedAt: timestamp("decommissionedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Device = typeof devices.$inferSelect;
+export type InsertDevice = typeof devices.$inferInsert;
+
+// App Provisioning
+export const appProvisioning = mysqlTable("app_provisioning", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  employeeId: int("employeeId").notNull(),
+  appName: varchar("appName", { length: 255 }).notNull(),
+  accessLevel: mysqlEnum("accessLevel", ["viewer", "editor", "admin"]).default("viewer").notNull(),
+  status: mysqlEnum("status", ["pending", "provisioned", "revoked"]).default("pending").notNull(),
+  requestedAt: timestamp("requestedAt").defaultNow().notNull(),
+  approvedAt: timestamp("approvedAt"),
+  approvedBy: int("approvedBy"),
+  revokedAt: timestamp("revokedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AppProvisioning = typeof appProvisioning.$inferSelect;
+export type InsertAppProvisioning = typeof appProvisioning.$inferInsert;
+
+// Access Control
+export const accessControl = mysqlTable("access_control", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  employeeId: int("employeeId").notNull(),
+  resource: varchar("resource", { length: 255 }).notNull(),
+  permission: mysqlEnum("permission", ["read", "write", "admin", "execute"]).notNull(),
+  grantedBy: int("grantedBy").notNull(),
+  grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"),
+  revokedAt: timestamp("revokedAt"),
+  reason: text("reason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AccessControl = typeof accessControl.$inferSelect;
+export type InsertAccessControl = typeof accessControl.$inferInsert;
+
+// ============================================================
+// AI INTELLIGENCE LAYER TABLES
+// ============================================================
+
+// Predictions
+export const predictions = mysqlTable("predictions", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  employeeId: int("employeeId").notNull(),
+  predictionType: mysqlEnum("predictionType", ["attrition", "burnout", "promotion_readiness", "performance"]).notNull(),
+  score: decimal("score", { precision: 5, scale: 2 }).notNull(), // 0-100
+  confidence: decimal("confidence", { precision: 5, scale: 2 }).notNull(), // 0-100
+  reasoning: text("reasoning"),
+  actionRecommended: text("actionRecommended"),
+  status: mysqlEnum("status", ["active", "addressed", "archived"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Prediction = typeof predictions.$inferSelect;
+export type InsertPrediction = typeof predictions.$inferInsert;
+
+// Recommendations
+export const recommendations = mysqlTable("recommendations", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  employeeId: int("employeeId").notNull(),
+  recommendationType: mysqlEnum("recommendationType", ["promotion", "skill_development", "team_change", "wellness", "engagement"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  priority: mysqlEnum("priority", ["low", "medium", "high"]).default("medium").notNull(),
+  status: mysqlEnum("status", ["pending", "accepted", "rejected", "completed"]).default("pending").notNull(),
+  acceptedAt: timestamp("acceptedAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Recommendation = typeof recommendations.$inferSelect;
+export type InsertRecommendation = typeof recommendations.$inferInsert;
+
+// AI Chat History
+export const aiChatHistory = mysqlTable("ai_chat_history", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  userId: int("userId").notNull(),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  context: varchar("context", { length: 255 }), // e.g., "headcount", "payroll", "performance"
+  confidence: decimal("confidence", { precision: 5, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AIChatHistory = typeof aiChatHistory.$inferSelect;
+export type InsertAIChatHistory = typeof aiChatHistory.$inferInsert;
+
+// ============================================================
+// DEVELOPER PLATFORM TABLES
+// ============================================================
+
+// API Keys
+export const apiKeys = mysqlTable("api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  userId: int("userId").notNull(),
+  keyName: varchar("keyName", { length: 255 }).notNull(),
+  keyHash: varchar("keyHash", { length: 255 }).notNull().unique(),
+  rateLimit: int("rateLimit").default(1000).notNull(),
+  status: mysqlEnum("status", ["active", "revoked"]).default("active").notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  revokedAt: timestamp("revokedAt"),
+});
+export type APIKey = typeof apiKeys.$inferSelect;
+export type InsertAPIKey = typeof apiKeys.$inferInsert;
+
+// Webhooks
+export const webhooks = mysqlTable("webhooks", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  userId: int("userId").notNull(),
+  webhookName: varchar("webhookName", { length: 255 }).notNull(),
+  url: text("url").notNull(),
+  events: varchar("events", { length: 500 }).notNull(), // JSON array of events
+  secret: varchar("secret", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  lastTriggeredAt: timestamp("lastTriggeredAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Webhook = typeof webhooks.$inferSelect;
+export type InsertWebhook = typeof webhooks.$inferInsert;
+
+// Webhook Events (audit trail)
+export const webhookEvents = mysqlTable("webhook_events", {
+  id: int("id").autoincrement().primaryKey(),
+  webhookId: int("webhookId").notNull(),
+  eventType: varchar("eventType", { length: 100 }).notNull(),
+  payload: text("payload").notNull(), // JSON
+  status: mysqlEnum("status", ["pending", "delivered", "failed"]).default("pending").notNull(),
+  retries: int("retries").default(0).notNull(),
+  nextRetryAt: timestamp("nextRetryAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;
+
+// Marketplace Apps
+export const marketplaceApps = mysqlTable("marketplace_apps", {
+  id: int("id").autoincrement().primaryKey(),
+  appName: varchar("appName", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  logoUrl: text("logoUrl"),
+  developerName: varchar("developerName", { length: 255 }).notNull(),
+  developerEmail: varchar("developerEmail", { length: 320 }).notNull(),
+  apiDocUrl: text("apiDocUrl"),
+  status: mysqlEnum("status", ["draft", "published", "deprecated"]).default("draft").notNull(),
+  rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
+  downloads: int("downloads").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MarketplaceApp = typeof marketplaceApps.$inferSelect;
+export type InsertMarketplaceApp = typeof marketplaceApps.$inferInsert;
+
+// Marketplace App Installations
+export const marketplaceInstallations = mysqlTable("marketplace_installations", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  appId: int("appId").notNull(),
+  installationKey: varchar("installationKey", { length: 255 }).notNull().unique(),
+  status: mysqlEnum("status", ["active", "inactive", "uninstalled"]).default("active").notNull(),
+  installedAt: timestamp("installedAt").defaultNow().notNull(),
+  uninstalledAt: timestamp("uninstalledAt"),
+});
+export type MarketplaceInstallation = typeof marketplaceInstallations.$inferSelect;
+export type InsertMarketplaceInstallation = typeof marketplaceInstallations.$inferInsert;
