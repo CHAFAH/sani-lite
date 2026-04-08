@@ -332,3 +332,17 @@
 - [x] Remove Invitations page from navigation
 - [x] Update employee profile to single-page read-only view
 - [x] Test email invite and join flow
+
+
+## Phase 20: Employee Onboarding Flow
+
+- [x] Create onboarding_progress table to track completion status
+- [x] Build OnboardingChecklist component with progress tracking
+- [x] Create WelcomePage with company info and onboarding intro
+- [x] Build ProfileCompletionFlow with personal, job, and banking sections
+- [x] Implement email invite acceptance with token validation
+- [x] Auto-redirect to onboarding after email invite acceptance
+- [x] Add onboarding status to employee profile
+- [x] Create onboarding completion notification
+- [x] Write tests for onboarding features
+- [x] Test email invite to onboarding flow
