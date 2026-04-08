@@ -354,3 +354,12 @@
 - [x] Use structured label-value rows like a data sheet
 - [x] Keep action menu and edit drawer integration
 - [x] Test and verify
+
+## Phase 22: Employee Profile Inline Editing
+
+- [x] Add inline editing mode to employee profile data sheet
+- [x] Toggle between view and edit mode with Edit/Save/Cancel buttons
+- [x] Add dropdown selectors for country, department, employment type, currency, role
+- [x] Make text fields editable in place (name, email, phone, city, position)
+- [x] Implement save mutation to persist changes
+- [x] Test inline editing flow
