@@ -105,6 +105,34 @@ export function registerOAuthRoutes(app: Express) {
         lastSignedIn: new Date(),
       });
 
+      // Get the user and assign company if needed
+      let user = await db.getUserByOpenId(userInfo.openId);
+      
+      if (user && !user.companyId && (user.role === "admin" || user.role === "company_owner")) {
+        try {
+          const company = await db.createCompany({
+            name: `${user.name || "Company"}'s Workspace`,
+            status: "active",
+            kycVerified: true,
+          });
+          const companyId = company.insertId;
+
+          await db.createSubscription({
+            companyId,
+            tier: "growth",
+            seats: 50,
+            price: "299",
+            billingCycle: "monthly",
+            status: "active",
+          });
+
+          await db.setUserCompanyId(userInfo.openId, companyId);
+          user = await db.getUserByOpenId(userInfo.openId);
+        } catch (error) {
+          console.error("[OAuth] Failed to create company:", error);
+        }
+      }
+
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",
         expiresInMs: ONE_YEAR_MS,
@@ -113,8 +141,6 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      // Redirect to the correct dashboard based on user role
-      const user = await db.getUserByOpenId(userInfo.openId);
       const redirectPath = user ? getDashboardPathForRole(user.role) : "/admin";
 
       res.redirect(302, redirectPath);
