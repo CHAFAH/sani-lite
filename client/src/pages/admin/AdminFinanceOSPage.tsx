@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AdminLayout } from "@/components/AdminLayout";
+import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -58,7 +58,7 @@ export default function AdminFinanceOSPage() {
     },
   });
 
-  const createCardMutation = trpc.finance.createCard.useMutation({
+  const createCardMutation = trpc.finance.registerCard.useMutation({
     onSuccess: () => {
       setCardForm({ employeeId: "", cardNumber: "", cardholderName: "", expiryDate: "", limit: "" });
       setIsCreateCardOpen(false);
@@ -74,13 +74,13 @@ export default function AdminFinanceOSPage() {
     },
   });
 
-  const updateExpenseStatusMutation = trpc.finance.updateExpenseStatus.useMutation({
+  const updateExpenseStatusMutation = trpc.finance.approveExpense.useMutation({
     onSuccess: () => {
       trpc.useUtils().finance.listExpenses.invalidate();
     },
   });
 
-  const updateCardStatusMutation = trpc.finance.updateCardStatus.useMutation({
+  const updateCardStatusMutation = trpc.finance.suspendCard.useMutation({
     onSuccess: () => {
       trpc.useUtils().finance.listCards.invalidate();
     },
@@ -121,11 +121,9 @@ export default function AdminFinanceOSPage() {
       return;
     }
     createBudgetMutation.mutate({
-      category: budgetForm.category,
+      departmentId: 1,
       amount: budgetForm.amount,
       period: budgetForm.period,
-      startDate: new Date(budgetForm.startDate),
-      endDate: new Date(budgetForm.endDate),
     });
   };
 
@@ -326,14 +324,14 @@ export default function AdminFinanceOSPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateExpenseStatusMutation.mutate({ expenseId: expense.id, status: "approved" })}
+                                onClick={() => updateExpenseStatusMutation.mutate({ id: expense.id })}
                               >
                                 Approve
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateExpenseStatusMutation.mutate({ expenseId: expense.id, status: "rejected" })}
+                                onClick={() => updateExpenseStatusMutation.mutate({ id: expense.id })}
                               >
                                 Reject
                               </Button>
@@ -436,7 +434,7 @@ export default function AdminFinanceOSPage() {
                           size="sm"
                           variant="outline"
                           className="w-full mt-4"
-                          onClick={() => updateCardStatusMutation.mutate({ cardId: card.id, status: "suspended" })}
+                          onClick={() => updateCardStatusMutation.mutate({ id: card.id })}
                         >
                           Suspend Card
                         </Button>

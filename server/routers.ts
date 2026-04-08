@@ -41,7 +41,7 @@ import {
   // IT & Identity OS
   createDevice, getDevicesByCompanyId, updateDeviceStatus,
   createAppProvisioning, getAppProvisioningByCompanyId, updateAppProvisioningStatus,
-  createAccessControl, getAccessControlByCompanyId, updateAccessControlStatus,
+  createAccessControl, getAccessControlByCompanyId,
   // AI Intelligence
   createPrediction, getPredictionsByCompanyId, updatePredictionStatus,
   createRecommendation, getRecommendationsByCompanyId, updateRecommendationStatus,
@@ -831,24 +831,24 @@ export const appRouter = router({
       return { success: true, expenseId: result };
     }),
     listExpenses: companyProcedure.query(async ({ ctx }) => getExpensesByCompanyId(ctx.companyId)),
-    approveExpense: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    approveExpense: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await updateExpenseStatus(input.id, "approved" as any);
       return { success: true };
     }),
-    rejectExpense: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    rejectExpense: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await updateExpenseStatus(input.id, "rejected" as any);
       return { success: true };
     }),
-    registerCard: adminProcedure.input(z.object({ employeeId: z.number(), cardNumber: z.string(), cardholderName: z.string(), expiryDate: z.string(), limit: z.string() })).mutation(async ({ input, ctx }) => {
+    registerCard: companyProcedure.input(z.object({ employeeId: z.number(), cardNumber: z.string(), cardholderName: z.string(), expiryDate: z.string(), limit: z.string() })).mutation(async ({ input, ctx }) => {
       const result = await createCorporateCard({ ...input, companyId: ctx.companyId });
       return { success: true, cardId: result };
     }),
     listCards: companyProcedure.query(async ({ ctx }) => getCorporateCardsByCompanyId(ctx.companyId)),
-    suspendCard: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    suspendCard: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await updateCardStatus(input.id, "suspended" as any);
       return { success: true };
     }),
-    createBudget: adminProcedure.input(z.object({ departmentId: z.number(), amount: z.string(), period: z.string() })).mutation(async ({ input, ctx }) => {
+    createBudget: companyProcedure.input(z.object({ departmentId: z.number(), amount: z.string(), period: z.string() })).mutation(async ({ input, ctx }) => {
       const result = await createBudget({ ...input, companyId: ctx.companyId });
       return { success: true, budgetId: result };
     }),
@@ -864,7 +864,7 @@ export const appRouter = router({
       return { success: true, deviceId: result };
     }),
     listDevices: companyProcedure.query(async ({ ctx }) => getDevicesByCompanyId(ctx.companyId)),
-    updateDeviceStatus: adminProcedure.input(z.object({ id: z.number(), status: z.string() })).mutation(async ({ input }) => {
+    updateDeviceStatus: companyProcedure.input(z.object({ id: z.number(), status: z.string() })).mutation(async ({ input }) => {
       await updateDeviceStatus(input.id, input.status as any);
       return { success: true };
     }),
@@ -873,11 +873,11 @@ export const appRouter = router({
       return { success: true, requestId: result };
     }),
     listAppRequests: companyProcedure.query(async ({ ctx }) => getAppProvisioningByCompanyId(ctx.companyId)),
-    approveAppRequest: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    approveAppRequest: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await updateAppProvisioningStatus(input.id, "approved" as any);
       return { success: true };
     }),
-    grantAccess: adminProcedure.input(z.object({ employeeId: z.number(), resourceName: z.string(), accessLevel: z.string() })).mutation(async ({ input, ctx }) => {
+    grantAccess: companyProcedure.input(z.object({ employeeId: z.number(), resourceName: z.string(), accessLevel: z.string() })).mutation(async ({ input, ctx }) => {
       const result = await createAccessControl({ ...input, companyId: ctx.companyId });
       return { success: true, accessId: result };
     }),
@@ -889,12 +889,12 @@ export const appRouter = router({
   // ============================================================
   ai: router({
     listPredictions: companyProcedure.query(async ({ ctx }) => getPredictionsByCompanyId(ctx.companyId)),
-    updatePredictionStatus: adminProcedure.input(z.object({ id: z.number(), status: z.enum(["active", "archived", "addressed"]) })).mutation(async ({ input }) => {
+    updatePredictionStatus: companyProcedure.input(z.object({ id: z.number(), status: z.enum(["active", "archived", "addressed"]) })).mutation(async ({ input }) => {
       await updatePredictionStatus(input.id, input.status);
       return { success: true };
     }),
     listRecommendations: companyProcedure.query(async ({ ctx }) => getRecommendationsByCompanyId(ctx.companyId)),
-    updateRecommendationStatus: adminProcedure.input(z.object({ id: z.number(), status: z.enum(["active", "inactive"]) })).mutation(async ({ input }) => {
+    updateRecommendationStatus: companyProcedure.input(z.object({ id: z.number(), status: z.enum(["active", "inactive"]) })).mutation(async ({ input }) => {
       await updateRecommendationStatus(input.id, input.status as any);
       return { success: true };
     }),
@@ -902,7 +902,7 @@ export const appRouter = router({
       const result = await createAIChatHistory({ employeeId: ctx.user.id || 0, userMessage: input.message, aiResponse: "AI response pending", conversationId: input.conversationId || crypto.randomUUID() });
       return { success: true, chatId: result, response: "AI response pending" };
     }),
-    getChatHistory: protectedProcedure.input(z.object({ conversationId: z.string() })).query(async ({ input, ctx }) => getAIChatHistoryByCompanyId(ctx.companyId || 0)),
+    getChatHistory: companyProcedure.input(z.object({ conversationId: z.string() })).query(async ({ input, ctx }) => getAIChatHistoryByCompanyId(ctx.companyId)),
   }),
 
   // ============================================================

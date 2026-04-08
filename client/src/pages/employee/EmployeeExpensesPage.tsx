@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { EmployeeLayout } from "@/components/EmployeeLayout";
+import EmployeeLayout from "@/components/EmployeeLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,13 +20,13 @@ export default function EmployeeExpensesPage() {
   });
 
   const { data: myEmployee } = trpc.userManagement.getMyEmployee.useQuery();
-  const { data: expenses = [], isLoading } = trpc.finance.listMyExpenses.useQuery();
+  const { data: expenses = [], isLoading } = trpc.finance.listExpenses.useQuery();
 
   const createExpenseMutation = trpc.finance.createExpense.useMutation({
     onSuccess: () => {
       setFormData({ amount: "", category: "travel", description: "", receiptUrl: "" });
       setIsCreateOpen(false);
-      trpc.useUtils().finance.listMyExpenses.invalidate();
+      trpc.useUtils().finance.listExpenses.invalidate();
     },
   });
 

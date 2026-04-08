@@ -155,7 +155,7 @@ function Router() {
       <Route path="/admin/invitations" component={AdminInvitationsPage} />
       <Route path="/admin/rbac" component={AdminRbacPage} />
       <Route path="/admin/time-off" component={AdminTimeOffPage} />
-      <Route path="/admin/payroll" component={AdminPayrollPage} />
+      <Route path="/admin/payroll" component={AdminPayrollHubPage} />
       <Route path="/admin/payroll-hub" component={AdminPayrollHubPage} />
       <Route path="/admin/benefits" component={AdminBenefitsPage} />
       <Route path="/admin/hiring" component={AdminHiringPage} />
@@ -167,8 +167,7 @@ function Router() {
       <Route path="/admin/analytics" component={AdminAnalyticsPage} />
       <Route path="/admin/workflows" component={AdminWorkflowsPage} />
       <Route path="/admin/sso" component={AdminSsoPage} />
-        <Route path="/admin/company" component={AdminCompanyPage} />
-        <Route path="/admin/finance" component={AdminFinanceOSPage} />
+      <Route path="/admin/finance" component={AdminFinanceOSPage} />
 
       {/* ══════════════════════════════════════════════
           MANAGER PLATFORM — /manager/*
