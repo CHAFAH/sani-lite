@@ -346,3 +346,11 @@
 - [x] Create onboarding completion notification
 - [x] Write tests for onboarding features
 - [x] Test email invite to onboarding flow
+
+## Phase 21: Employee Profile Page - Table-Like Layout
+
+- [x] Rebuild employee profile as single page with table-like rows
+- [x] Include all sections: Overview, Job Info, Compensation, Payroll, Time Off, Performance, Documents, Activity Log
+- [x] Use structured label-value rows like a data sheet
+- [x] Keep action menu and edit drawer integration
+- [x] Test and verify

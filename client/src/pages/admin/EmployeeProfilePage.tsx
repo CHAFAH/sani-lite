@@ -1,8 +1,7 @@
-import { useRoute, useLocation } from "wouter";
 import { useState } from "react";
+import { useRoute, useLocation } from "wouter";
 import AdminLayout from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import EditEmployeeDrawer from "@/components/EditEmployeeDrawer";
@@ -21,40 +20,54 @@ import {
   Users2,
   Power,
   Trash2,
-  Mail,
-  Phone,
-  MapPin,
-  Briefcase,
-  DollarSign,
-  Calendar,
-  FileText,
-  TrendingUp,
-  Clock,
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-  const getRoleBadgeColor = (role: string | undefined) => {
-    switch (role) {
-      case "admin":
-        return "bg-red-100 text-red-800";
-      case "manager":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-slate-100 text-slate-800";
-    }
-  };
+function InfoRow({ label, value, onClick }: { label: string; value: React.ReactNode; onClick?: () => void }) {
+  return (
+    <div className="flex items-start py-3 px-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors">
+      <span className="text-sm text-slate-500 w-44 shrink-0 font-medium">{label}</span>
+      {onClick ? (
+        <button onClick={onClick} className="text-sm text-blue-600 hover:underline font-medium">
+          {value || "—"}
+        </button>
+      ) : (
+        <span className="text-sm text-slate-900 font-medium">{value || "—"}</span>
+      )}
+    </div>
+  );
+}
 
-const getStatusBadgeColor = (status: string) => {
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
+      <h3 className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{title}</h3>
+    </div>
+  );
+}
+
+const getRoleBadge = (role: string | undefined) => {
+  switch (role) {
+    case "admin":
+      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Admin</Badge>;
+    case "manager":
+      return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Manager</Badge>;
+    default:
+      return <Badge className="bg-slate-100 text-slate-800 hover:bg-slate-100">Employee</Badge>;
+  }
+};
+
+const getStatusBadge = (status: string | undefined) => {
   switch (status) {
     case "active":
-      return "bg-emerald-100 text-emerald-800";
+      return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Active</Badge>;
     case "inactive":
-      return "bg-slate-100 text-slate-800";
+      return <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100">Inactive</Badge>;
     case "suspended":
-      return "bg-red-100 text-red-800";
+      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Suspended</Badge>;
     default:
-      return "bg-yellow-100 text-yellow-800";
+      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{status || "Pending"}</Badge>;
   }
 };
 
@@ -73,21 +86,21 @@ export default function EmployeeProfilePage() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <AlertCircle size={48} className="mx-auto text-slate-300 mb-4" />
-            <p className="text-slate-600">Employee not found</p>
-            <Button onClick={() => setLocation("/admin/employees")} className="mt-4">
-              Back to Employees
-            </Button>
+            <p className="text-slate-600 mb-4">Employee not found</p>
+            <Button onClick={() => setLocation("/admin/employees")}>Back to Employees</Button>
           </div>
         </div>
       </AdminLayout>
     );
   }
 
+  const emp = employee as any;
+
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
+      <div className="space-y-6 max-w-4xl">
+        {/* Top Navigation */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -98,240 +111,125 @@ export default function EmployeeProfilePage() {
               <ArrowLeft size={16} />
               Back
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">{employee?.firstName} {employee?.lastName}</h1>
-              <p className="text-slate-600 mt-1">{employee?.position || "No position set"}</p>
-            </div>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <MoreVertical size={16} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
-                <Edit size={16} className="mr-2" />
-                Edit Employee
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Shield size={16} className="mr-2" />
-                Change Role
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Users2 size={16} className="mr-2" />
-                Assign Manager
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Power size={16} className="mr-2" />
-                Deactivate
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">
-                <Trash2 size={16} className="mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditOpen(true)}
+              className="gap-2"
+            >
+              <Edit size={14} />
+              Edit
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <MoreVertical size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                  <Edit size={14} className="mr-2" /> Edit Employee
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => toast.info("Feature coming soon")}>
+                  <Shield size={14} className="mr-2" /> Change Role
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => toast.info("Feature coming soon")}>
+                  <Users2 size={14} className="mr-2" /> Assign Manager
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => toast.info("Feature coming soon")}>
+                  <Power size={14} className="mr-2" /> Deactivate
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-red-600" onClick={() => toast.info("Feature coming soon")}>
+                  <Trash2 size={14} className="mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        {/* Status Badges */}
-        <div className="flex gap-2">
-          <Badge className={getRoleBadgeColor((employee as any)?.role || "user")}>
-            {(employee as any)?.role || "Employee"}
-          </Badge>
-          <Badge className={getStatusBadgeColor(employee?.status || "active")}>
-            {employee?.status || "Active"}
-          </Badge>
+        {/* Employee Header */}
+        <div className="flex items-center gap-4 pb-2">
+          <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-xl shrink-0">
+            {emp.firstName?.[0]}{emp.lastName?.[0]}
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">{emp.firstName} {emp.lastName}</h1>
+            <p className="text-sm text-slate-500">{emp.position || "No position"} · {emp.department || "No department"}</p>
+          </div>
+          <div className="flex gap-2 ml-auto">
+            {getRoleBadge(emp.role)}
+            {getStatusBadge(emp.status)}
+          </div>
         </div>
 
-        {/* Main Content - All Details on One Page */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Contact & Personal Info */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Contact Information */}
-            <Card className="border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-lg">Contact Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Mail size={18} className="text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Email</p>
-                    <p className="text-sm font-medium text-slate-900">{employee?.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone size={18} className="text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Phone</p>
-                    <p className="text-sm font-medium text-slate-900">{employee?.phone || "Not provided"}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin size={18} className="text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Location</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {employee?.city && employee?.country
-                        ? `${employee.city}, ${employee.country}`
-                        : "Not provided"}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Data Sheet */}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
 
-            {/* Job Information */}
-            <Card className="border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-lg">Job Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Briefcase size={18} className="text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Position</p>
-                    <p className="text-sm font-medium text-slate-900">{employee?.position || "Not set"}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Users2 size={18} className="text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Department</p>
-                    <p className="text-sm font-medium text-slate-900">{employee?.department || "Not set"}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Shield size={18} className="text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Employment Type</p>
-                    <p className="text-sm font-medium text-slate-900 capitalize">
-                      {employee?.employmentType?.replace("_", " ") || "Not set"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Users2 size={18} className="text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Manager</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {employee?.manager ? (
-                        <button
-                          onClick={() => setLocation(`/admin/employees/${employee.managerId}`)}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {employee.manager}
-                        </button>
-                      ) : (
-                        "Not assigned"
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Overview / Personal Info */}
+          <SectionHeader title="Personal Information" />
+          <InfoRow label="Full Name" value={`${emp.firstName} ${emp.lastName}`} />
+          <InfoRow label="Email" value={emp.email} />
+          <InfoRow label="Phone" value={emp.phone} />
+          <InfoRow label="City" value={emp.city} />
+          <InfoRow label="Country" value={emp.country} />
+          <InfoRow label="Employee ID" value={emp.employeeId || `EMP-${emp.id}`} />
 
-            {/* Compensation Information */}
-            <Card className="border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-lg">Compensation</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <DollarSign size={18} className="text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Salary</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {employee?.salary ? `${employee.currency} ${employee.salary}` : "Not set"}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Job Info */}
+          <SectionHeader title="Job Information" />
+          <InfoRow label="Job Title" value={emp.position} />
+          <InfoRow label="Department" value={emp.department} />
+          <InfoRow
+            label="Reports To"
+            value={emp.manager || "Not assigned"}
+            onClick={emp.managerId ? () => setLocation(`/admin/employees/${emp.managerId}`) : undefined}
+          />
+          <InfoRow label="Employment Type" value={emp.employmentType?.replace("_", " ")} />
+          <InfoRow label="Start Date" value={emp.startDate ? new Date(emp.startDate).toLocaleDateString() : undefined} />
+          <InfoRow label="End Date" value={emp.endDate ? new Date(emp.endDate).toLocaleDateString() : undefined} />
 
-            {/* Employment Dates */}
-            <Card className="border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-lg">Employment Dates</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Calendar size={18} className="text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Start Date</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {employee?.startDate
-                        ? new Date(employee.startDate).toLocaleDateString()
-                        : "Not set"}
-                    </p>
-                  </div>
-                </div>
-                {employee?.endDate && (
-                  <div className="flex items-center gap-3">
-                    <Calendar size={18} className="text-slate-400" />
-                    <div>
-                      <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">End Date</p>
-                      <p className="text-sm font-medium text-slate-900">
-                        {new Date(employee.endDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          {/* Compensation */}
+          <SectionHeader title="Compensation" />
+          <InfoRow label="Salary" value={emp.salary ? `${emp.currency || "USD"} ${Number(emp.salary).toLocaleString()}` : undefined} />
+          <InfoRow label="Currency" value={emp.currency} />
+          <InfoRow label="Bonus" value="—" />
+          <InfoRow label="Equity" value="—" />
 
-          {/* Right Column - Summary & Quick Actions */}
-          <div className="space-y-6">
-            {/* Quick Summary */}
-            <Card className="border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-base">Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Employee ID</p>
-                  <p className="text-sm font-semibold text-slate-900 mt-1">{employee?.id}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Status</p>
-                  <p className="text-sm font-semibold text-slate-900 mt-1 capitalize">{employee?.status}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Role</p>
-                  <p className="text-sm font-semibold text-slate-900 mt-1 capitalize">{(employee as any)?.role}</p>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Payroll */}
+          <SectionHeader title="Payroll" />
+          <InfoRow label="Bank Details" value="Not provided" />
+          <InfoRow label="Tax Info" value="Not provided" />
+          <InfoRow label="Payroll Status" value={emp.status === "active" ? "Active" : "Pending"} />
 
-            {/* Quick Actions */}
-            <Card className="border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-base">Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button
-                  onClick={() => setIsEditOpen(true)}
-                  className="w-full justify-start"
-                  variant="outline"
-                >
-                  <Edit size={16} className="mr-2" />
-                  Edit Profile
-                </Button>
-                <Button
-                  onClick={() => setLocation(`/admin/employees/${employee?.id}/edit`)}
-                  className="w-full justify-start"
-                  variant="outline"
-                >
-                  <FileText size={16} className="mr-2" />
-                  Full Edit
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Time Off */}
+          <SectionHeader title="Time Off" />
+          <InfoRow label="PTO Balance" value="—" />
+          <InfoRow label="Leave History" value="No records" />
+          <InfoRow label="Pending Requests" value="None" />
+
+          {/* Performance */}
+          <SectionHeader title="Performance" />
+          <InfoRow label="Goals / OKRs" value="Not set" />
+          <InfoRow label="Reviews" value="No reviews yet" />
+          <InfoRow label="Feedback" value="No feedback yet" />
+
+          {/* Documents */}
+          <SectionHeader title="Documents" />
+          <InfoRow label="Contract" value={emp.contractUrl ? "Uploaded" : "Not uploaded"} />
+          <InfoRow label="ID Documents" value="Not uploaded" />
+          <InfoRow label="Other Files" value="None" />
+
+          {/* Activity Log */}
+          <SectionHeader title="Activity Log" />
+          <InfoRow label="Account Created" value={emp.createdAt ? new Date(emp.createdAt).toLocaleString() : undefined} />
+          <InfoRow label="Last Updated" value={emp.updatedAt ? new Date(emp.updatedAt).toLocaleString() : undefined} />
+          <InfoRow label="Role Changes" value="No changes recorded" />
+          <InfoRow label="Salary Updates" value="No changes recorded" />
+          <InfoRow label="Manager Changes" value="No changes recorded" />
+
         </div>
       </div>
 
