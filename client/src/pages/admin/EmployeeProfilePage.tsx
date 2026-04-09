@@ -98,22 +98,31 @@ function EditInputRow({ label, value, onChange, placeholder }: { label: string; 
 }
 
 function EditSelectRow({
-  label, value, onChange, options, placeholder,
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
 }: {
-  label: string; value: string; onChange: (v: string) => void;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
   options: { value: string; label: string }[];
   placeholder?: string;
 }) {
   return (
     <div className="flex items-center py-2 px-4 border-b border-slate-100 last:border-b-0">
       <span className="text-sm text-slate-500 w-48 shrink-0 font-medium">{label}</span>
-      <Select value={value} onValueChange={onChange}>
+      <Select value={value || "__none__"} onValueChange={(v) => onChange(v === "__none__" ? "" : v)}>
         <SelectTrigger className="h-8 text-sm max-w-xs">
-          <SelectValue placeholder={placeholder || `Select ${label.toLowerCase()}`} />
+          <SelectValue placeholder={placeholder || label} />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="__none__">{placeholder || "None"}</SelectItem>
           {options.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            <SelectItem key={opt.value} value={opt.value || "__none__"}>
+              {opt.label}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -121,15 +130,7 @@ function EditSelectRow({
   );
 }
 
-/* ── Badge helpers ── */
-
-const getRoleBadge = (role: string | undefined) => {
-  switch (role) {
-    case "admin": return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Admin</Badge>;
-    case "manager": return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Manager</Badge>;
-    default: return <Badge className="bg-slate-100 text-slate-800 hover:bg-slate-100">Employee</Badge>;
-  }
-};
+const countryOptions = COUNTRIES.map((c) => ({ value: c, label: c }));
 
 const getStatusBadge = (status: string | undefined) => {
   switch (status) {
@@ -145,6 +146,7 @@ const getStatusBadge = (status: string | undefined) => {
 /* ── Main Component ── */
 
 export default function EmployeeProfilePage() {
+  // All hooks MUST be called at the top level, before any early returns
   const [, params] = useRoute("/admin/employees/:id");
   const [, setLocation] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
@@ -155,7 +157,7 @@ export default function EmployeeProfilePage() {
   const employee = employees.find((e: any) => e.id === employeeId);
   const emp = employee as any;
 
-  // Build dynamic dropdown options from existing employees
+  // Build dynamic dropdown options from existing employees - MUST be before early return
   const departments = useMemo(
     () => Array.from(new Set(employees.map((e: any) => e.department).filter(Boolean))) as string[],
     [employees]
@@ -238,6 +240,7 @@ export default function EmployeeProfilePage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  // NOW we can do early returns after all hooks are called
   if (!employee) {
     return (
       <AdminLayout>
@@ -252,121 +255,79 @@ export default function EmployeeProfilePage() {
     );
   }
 
-  // Build country options
-  const countryOptions = useMemo(() => {
-    const all = new Set([...COUNTRIES, ...(emp?.country ? [emp.country] : [])]);
-    return Array.from(all).sort().map((c) => ({ value: c, label: c }));
-  }, [emp?.country]);
-
-  // Build department options
-  const departmentOptions = useMemo(() => {
-    const all = new Set([...departments, "Engineering", "Product", "Design", "Marketing", "Sales", "Finance", "HR", "Operations", "Legal", "Support"]);
-    return Array.from(all).sort().map((d) => ({ value: d, label: d }));
-  }, [departments]);
-
-  // Build position options
-  const positionOptions = useMemo(() => {
-    const all = new Set([...positions, "Software Engineer", "Product Manager", "Designer", "Data Analyst", "HR Manager", "Finance Manager", "Sales Representative", "Marketing Manager", "Operations Manager", "CEO", "CTO", "CFO", "COO"]);
-    return Array.from(all).sort().map((p) => ({ value: p, label: p }));
-  }, [positions]);
-
-  const currencyOptions = CURRENCIES.map((c) => ({ value: c, label: c }));
-  const managerName = emp.managerId ? employees.find((e: any) => e.id === emp.managerId) : null;
+  const departmentOptions = departments.map((d) => ({ value: d, label: d }));
+  const positionOptions = positions.map((p) => ({ value: p, label: p }));
 
   return (
     <AdminLayout>
-      <div className="space-y-6 max-w-4xl">
-        {/* Top Navigation */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/admin/employees")}
-            className="gap-2"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </Button>
-
-          <div className="flex items-center gap-2">
-            {isEditing ? (
-              <>
-                <Button variant="outline" size="sm" onClick={handleCancel} className="gap-2">
-                  <X size={14} />
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleSave} disabled={updateMut.isPending} className="gap-2 bg-teal-600 hover:bg-teal-700">
-                  {updateMut.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                  Save Changes
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  className="gap-2"
-                >
-                  <Edit size={14} />
-                  Edit
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <MoreVertical size={16} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                      <Edit size={14} className="mr-2" /> Edit Employee
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast.info("Feature coming soon")}>
-                      <Shield size={14} className="mr-2" /> Change Role
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => toast.info("Feature coming soon")}>
-                      <Users2 size={14} className="mr-2" /> Assign Manager
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => toast.info("Feature coming soon")}>
-                      <Power size={14} className="mr-2" /> Deactivate
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600" onClick={() => toast.info("Feature coming soon")}>
-                      <Trash2 size={14} className="mr-2" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Employee Header */}
-        <div className="flex items-center gap-4 pb-2">
-          <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-xl shrink-0">
-            {emp.firstName?.[0]}{emp.lastName?.[0]}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">{emp.firstName} {emp.lastName}</h1>
-            <p className="text-sm text-slate-500">{emp.position || "No position"} · {emp.department || "No department"}</p>
-          </div>
-          <div className="flex gap-2 ml-auto">
-            {getRoleBadge((emp as any).role)}
+      <div className="p-6 max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => setLocation("/admin/employees")}>
+              <ArrowLeft size={16} className="mr-2" />
+              Back
+            </Button>
+            <h1 className="text-2xl font-bold">{emp.firstName} {emp.lastName}</h1>
             {getStatusBadge(emp.status)}
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreVertical size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsEditing(!isEditing)}>
+                <Edit size={14} className="mr-2" />
+                {isEditing ? "Cancel Edit" : "Edit"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Shield size={14} className="mr-2" />
+                Change Role
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Users2 size={14} className="mr-2" />
+                Assign Manager
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Power size={14} className="mr-2" />
+                Deactivate
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600">
+                <Trash2 size={14} className="mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* Data Sheet */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        {/* Save/Cancel Bar (when editing) */}
+        {isEditing && (
+          <div className="flex gap-2 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <Button size="sm" onClick={handleSave} disabled={updateMut.isPending}>
+              {updateMut.isPending ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Save size={14} className="mr-2" />}
+              Save Changes
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleCancel}>
+              <X size={14} className="mr-2" />
+              Cancel
+            </Button>
+          </div>
+        )}
 
+        {/* Data Sheet */}
+        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
           {/* Personal Information */}
           <SectionHeader title="Personal Information" />
           {isEditing ? (
             <>
               <EditInputRow label="First Name" value={form.firstName} onChange={(v) => setField("firstName", v)} />
               <EditInputRow label="Last Name" value={form.lastName} onChange={(v) => setField("lastName", v)} />
-              <ViewRow label="Email" value={emp.email} />
-              <EditInputRow label="Phone" value={form.phone} onChange={(v) => setField("phone", v)} placeholder="+1 234 567 8900" />
+              <EditInputRow label="Email" value={form.email} onChange={(v) => setField("email", v)} />
+              <EditInputRow label="Phone" value={form.phone} onChange={(v) => setField("phone", v)} />
               <EditInputRow label="City" value={form.city} onChange={(v) => setField("city", v)} />
               <EditSelectRow label="Country" value={form.country} onChange={(v) => setField("country", v)} options={countryOptions} />
             </>
@@ -395,14 +356,9 @@ export default function EmployeeProfilePage() {
             <>
               <ViewRow label="Job Title" value={emp.position} />
               <ViewRow label="Department" value={emp.department} />
-              <ViewRow
-                label="Reports To"
-                value={managerName ? `${(managerName as any).firstName} ${(managerName as any).lastName}` : "Not assigned"}
-                onClick={emp.managerId ? () => setLocation(`/admin/employees/${emp.managerId}`) : undefined}
-              />
-              <ViewRow label="Employment Type" value={emp.employmentType?.replace("_", " ")} />
-              <ViewRow label="Start Date" value={emp.startDate ? new Date(emp.startDate).toLocaleDateString() : undefined} />
-              <ViewRow label="End Date" value={emp.endDate ? new Date(emp.endDate).toLocaleDateString() : undefined} />
+              <ViewRow label="Reports To" value={emp.managerId ? managers.find((m) => m.value === String(emp.managerId))?.label || "—" : "—"} />
+              <ViewRow label="Employment Type" value={emp.employmentType} />
+              <ViewRow label="Status" value={emp.status} />
             </>
           )}
 
@@ -410,67 +366,41 @@ export default function EmployeeProfilePage() {
           <SectionHeader title="Compensation" />
           {isEditing ? (
             <>
-              <EditInputRow label="Salary" value={form.salary} onChange={(v) => setField("salary", v)} placeholder="e.g. 85000" />
-              <EditSelectRow label="Currency" value={form.currency} onChange={(v) => setField("currency", v)} options={currencyOptions} />
+              <EditInputRow label="Salary" value={form.salary} onChange={(v) => setField("salary", v)} placeholder="0.00" />
+              <EditSelectRow label="Currency" value={form.currency} onChange={(v) => setField("currency", v)} options={CURRENCIES.map((c) => ({ value: c, label: c }))} />
             </>
           ) : (
             <>
-              <ViewRow label="Salary" value={emp.salary ? `${emp.currency || "USD"} ${Number(emp.salary).toLocaleString()}` : undefined} />
-              <ViewRow label="Currency" value={emp.currency} />
-              <ViewRow label="Bonus" value="—" />
-              <ViewRow label="Equity" value="—" />
+              <ViewRow label="Salary" value={emp.salary ? `${emp.currency || "USD"} ${emp.salary.toLocaleString()}` : "—"} />
+              <ViewRow label="Currency" value={emp.currency || "USD"} />
             </>
           )}
 
-          {/* Payroll */}
-          <SectionHeader title="Payroll" />
-          <ViewRow label="Bank Details" value="Not provided" />
-          <ViewRow label="Tax Info" value="Not provided" />
-          <ViewRow label="Payroll Status" value={emp.status === "active" ? "Active" : "Pending"} />
+          {/* Payroll Information */}
+          <SectionHeader title="Payroll Information" />
+          <ViewRow label="Bank Account" value={emp.bankAccount || "Not provided"} />
+          <ViewRow label="Tax ID" value={emp.taxId || "Not provided"} />
 
           {/* Time Off */}
           <SectionHeader title="Time Off" />
-          <ViewRow label="PTO Balance" value="—" />
-          <ViewRow label="Leave History" value="No records" />
-          <ViewRow label="Pending Requests" value="None" />
+          <ViewRow label="PTO Balance" value={emp.ptoBalance || "0 days"} />
+          <ViewRow label="Sick Days Used" value={emp.sickDaysUsed || "0 days"} />
 
           {/* Performance */}
           <SectionHeader title="Performance" />
-          <ViewRow label="Goals / OKRs" value="Not set" />
-          <ViewRow label="Reviews" value="No reviews yet" />
-          <ViewRow label="Feedback" value="No feedback yet" />
+          <ViewRow label="Last Review" value={emp.lastReviewDate || "No review yet"} />
+          <ViewRow label="Performance Rating" value={emp.performanceRating || "—"} />
 
           {/* Documents */}
           <SectionHeader title="Documents" />
-          <ViewRow label="Contract" value={emp.contractUrl ? "Uploaded" : "Not uploaded"} />
-          <ViewRow label="ID Documents" value="Not uploaded" />
-          <ViewRow label="Other Files" value="None" />
+          <ViewRow label="Employment Contract" value={emp.contractUrl ? <a href={emp.contractUrl} className="text-blue-600 hover:underline">View Contract</a> : "Not uploaded"} />
+          <ViewRow label="Offer Letter" value={emp.offerLetterUrl ? <a href={emp.offerLetterUrl} className="text-blue-600 hover:underline">View Offer</a> : "Not uploaded"} />
 
           {/* Activity Log */}
           <SectionHeader title="Activity Log" />
-          <ViewRow label="Account Created" value={emp.createdAt ? new Date(emp.createdAt).toLocaleString() : undefined} />
-          <ViewRow label="Last Updated" value={emp.updatedAt ? new Date(emp.updatedAt).toLocaleString() : undefined} />
-          <ViewRow label="Role Changes" value="No changes recorded" />
-          <ViewRow label="Salary Updates" value="No changes recorded" />
-          <ViewRow label="Manager Changes" value="No changes recorded" />
-
+          <ViewRow label="Created" value={emp.createdAt ? new Date(emp.createdAt).toLocaleDateString() : "—"} />
+          <ViewRow label="Last Updated" value={emp.updatedAt ? new Date(emp.updatedAt).toLocaleDateString() : "—"} />
         </div>
-
-        {/* Bottom Save Bar (sticky when editing) */}
-        {isEditing && (
-          <div className="sticky bottom-0 bg-white border border-slate-200 rounded-xl p-4 shadow-lg flex items-center justify-between">
-            <p className="text-sm text-slate-500">You have unsaved changes</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={updateMut.isPending} className="bg-teal-600 hover:bg-teal-700">
-                {updateMut.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : <Save size={14} className="mr-2" />}
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
     </AdminLayout>
   );

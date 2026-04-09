@@ -156,8 +156,8 @@
 - [x] Restrict employee access (no salary visibility, no admin settings)
 
 ### Company Hierarchy
-- [ ] Build dynamic org chart visualization
-- [ ] Implement reporting lines (reportsTo chain)
+- [x] Build dynamic org chart visualization (interactive tree with expand/collapse)
+- [x] Implement reporting lines (reportsTo chain with manager navigation)
 - [ ] Build approval chains based on hierarchy
 
 ### Invitation System
@@ -175,6 +175,14 @@
 - [x] Build demo role switcher to test Admin/Manager/Employee dashboards
 - [x] Add "Try Demo" button to landing page linking to /demo
 - [x] Test all three dashboards with demo data
+
+## Phase 17: Bug Fixes & Org Hierarchy Expansion
+- [x] Fix React hook ordering violation in EmployeeProfilePage (moved hooks before early returns)
+- [x] Fix Select.Item empty value issue in inline editing (added __none__ sentinel value)
+- [x] Add 30 junior employees to team leads to deepen org hierarchy (76 total employees)
+- [x] Verify org chart displays full hierarchy with new junior employees
+- [x] Verify inline editing works without React hook errors
+- [x] All 82 tests passing after fixes
 
 ## Phase 16: Company OS Expansion (HiBob Killer Features)
 
@@ -437,3 +445,11 @@
 - [x] Show avatar, name, title, department on each node
 - [x] Add employee count badges on expandable nodes
 - [x] Test both employee list and org chart
+
+
+## Phase 26: Fix Edit Employee & Expand Org Hierarchy
+
+- [ ] Fix edit employee details error when clicking edit
+- [ ] Add more junior employees to team leads (expand hierarchy depth)
+- [ ] Test edit employee flow
+- [ ] Verify org chart shows deeper hierarchy
