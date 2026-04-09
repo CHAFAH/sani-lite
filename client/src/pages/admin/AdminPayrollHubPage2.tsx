@@ -64,14 +64,39 @@ export default function AdminPayrollHubPage() {
   const paidCycles = cycles.filter((c: any) => c.status === "paid").length;
   const pendingCycles = cycles.filter((c: any) => c.status === "draft" || c.status === "approved").length;
 
-  // Mock audit log
-  const auditLog = [
-    { id: 1, action: "Payroll cycle created", user: "Admin", timestamp: new Date(Date.now() - 86400000).toISOString(), details: "March 2026 cycle" },
-    { id: 2, action: "Payroll approved", user: "Admin", timestamp: new Date(Date.now() - 172800000).toISOString(), details: "February 2026 cycle" },
-    { id: 3, action: "Payroll processed", user: "System", timestamp: new Date(Date.now() - 259200000).toISOString(), details: "February 2026 cycle" },
-    { id: 4, action: "Salary adjustment", user: "Admin", timestamp: new Date(Date.now() - 345600000).toISOString(), details: "John Doe - $5,000 increase" },
-    { id: 5, action: "Payroll marked paid", user: "System", timestamp: new Date(Date.now() - 432000000).toISOString(), details: "January 2026 cycle" },
-  ];
+  // Derive audit log from real payroll cycles
+  const auditLog = useMemo(() => {
+    if (cycles.length === 0) return [];
+    return cycles.flatMap((c: any) => {
+      const entries = [];
+      entries.push({
+        id: `${c.id}-created`,
+        action: "Payroll cycle created",
+        user: "Admin",
+        timestamp: c.createdAt || c.startDate || new Date().toISOString(),
+        details: c.name || `Cycle #${c.id}`,
+      });
+      if (c.status === "approved" || c.status === "paid" || c.status === "processing") {
+        entries.push({
+          id: `${c.id}-approved`,
+          action: "Payroll approved",
+          user: "Admin",
+          timestamp: c.updatedAt || c.startDate || new Date().toISOString(),
+          details: c.name || `Cycle #${c.id}`,
+        });
+      }
+      if (c.status === "paid") {
+        entries.push({
+          id: `${c.id}-paid`,
+          action: "Payroll marked paid",
+          user: "System",
+          timestamp: c.payDate || c.endDate || new Date().toISOString(),
+          details: `${c.name || `Cycle #${c.id}`} - $${(Number(c.totalAmount) || 0).toLocaleString()}`,
+        });
+      }
+      return entries;
+    }).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
+  }, [cycles]);
 
   return (
     <AdminLayout>

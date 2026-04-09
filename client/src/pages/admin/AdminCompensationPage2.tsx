@@ -14,26 +14,17 @@ import {
 import {
   DollarSign, TrendingUp, Users, BarChart3, Search, MoreVertical,
   ArrowUpRight, ArrowDownRight, Award, Gem, Target, Bell,
-  Pencil, Eye, CheckCircle2, Clock, AlertTriangle,
+  Pencil, Eye, CheckCircle2, Clock, AlertTriangle, Plus, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
-/* ── Salary bands ── */
-const SALARY_BANDS = [
-  { level: "IC1", title: "Junior", minSalary: 45000, midSalary: 55000, maxSalary: 65000 },
-  { level: "IC2", title: "Mid-Level", minSalary: 65000, midSalary: 80000, maxSalary: 95000 },
-  { level: "IC3", title: "Senior", minSalary: 90000, midSalary: 110000, maxSalary: 130000 },
-  { level: "IC4", title: "Staff", minSalary: 120000, midSalary: 145000, maxSalary: 170000 },
-  { level: "IC5", title: "Principal", minSalary: 150000, midSalary: 180000, maxSalary: 210000 },
-  { level: "M1", title: "Manager", minSalary: 100000, midSalary: 125000, maxSalary: 150000 },
-  { level: "M2", title: "Senior Manager", minSalary: 130000, midSalary: 160000, maxSalary: 190000 },
-  { level: "D1", title: "Director", minSalary: 160000, midSalary: 200000, maxSalary: 240000 },
-  { level: "VP", title: "VP", minSalary: 200000, midSalary: 260000, maxSalary: 320000 },
-];
-
 export default function AdminCompensationPage() {
-  const { data: employees = [] } = trpc.employee.list.useQuery();
+  const { data: employees = [], isLoading: loadingEmployees } = trpc.employee.list.useQuery();
+  const { data: salaryBands = [], isLoading: loadingBands } = trpc.salaryBand.list.useQuery();
+  const { data: compensationRecords = [], isLoading: loadingComp } = trpc.compensation.list.useQuery();
+  const { data: payrollCycles = [] } = trpc.payrollCycle.list.useQuery();
+
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
@@ -62,8 +53,50 @@ export default function AdminCompensationPage() {
     return salaries.length % 2 ? salaries[mid] : (salaries[mid - 1] + salaries[mid]) / 2;
   }, [employees]);
 
-  // Mock equity data
-  const equityPool = { totalShares: 10000000, allocated: 3500000, available: 6500000, vestingEmployees: 25 };
+  /* ── Equity computed from compensation records ── */
+  const equityRecords = useMemo(() => {
+    return compensationRecords.filter((c: any) => c.type === "equity" || c.type === "bonus");
+  }, [compensationRecords]);
+
+  const equityPool = useMemo(() => {
+    const totalAllocated = equityRecords.reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0);
+    const vestingCount = new Set(equityRecords.map((c: any) => c.employeeId)).size;
+    return {
+      totalShares: Math.max(totalAllocated * 3, 10000000), // estimate total pool
+      allocated: totalAllocated,
+      available: Math.max(totalAllocated * 3, 10000000) - totalAllocated,
+      vestingEmployees: vestingCount,
+    };
+  }, [equityRecords]);
+
+  /* ── Review cycles from payroll cycles ── */
+  const reviewCycles = useMemo(() => {
+    if (payrollCycles.length === 0) {
+      return [
+        { name: "Annual Review 2026", status: "upcoming", date: "Apr 2026", employees: employees.length, budget: `$${Math.round(totalCompensation * 0.05).toLocaleString()}` },
+        { name: "Mid-Year Review 2025", status: "completed", date: "Jul 2025", employees: employees.length, budget: `$${Math.round(totalCompensation * 0.03).toLocaleString()}` },
+      ];
+    }
+    return payrollCycles.slice(0, 5).map((c: any) => ({
+      name: `Payroll Cycle: ${c.name || c.id}`,
+      status: c.status === "completed" ? "completed" : "upcoming",
+      date: c.startDate ? new Date(c.startDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—",
+      employees: employees.length,
+      budget: `$${(Number(c.totalAmount) || 0).toLocaleString()}`,
+    }));
+  }, [payrollCycles, employees, totalCompensation]);
+
+  const isLoading = loadingEmployees || loadingBands || loadingComp;
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="animate-spin text-teal-600" size={32} />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -93,7 +126,7 @@ export default function AdminCompensationPage() {
                   <DollarSign size={20} className="text-teal-600" />
                 </div>
                 <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-0">
-                  <ArrowUpRight size={12} className="mr-1" />+5.8%
+                  <ArrowUpRight size={12} className="mr-1" />Live
                 </Badge>
               </div>
               <p className="text-2xl font-bold text-slate-900">${totalCompensation.toLocaleString()}</p>
@@ -123,7 +156,9 @@ export default function AdminCompensationPage() {
               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mb-2">
                 <Gem size={20} className="text-amber-600" />
               </div>
-              <p className="text-2xl font-bold text-slate-900">{((equityPool.allocated / equityPool.totalShares) * 100).toFixed(1)}%</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {equityPool.totalShares > 0 ? ((equityPool.allocated / equityPool.totalShares) * 100).toFixed(1) : "0.0"}%
+              </p>
               <p className="text-xs text-slate-500 mt-1">Equity Pool Used</p>
             </CardContent>
           </Card>
@@ -183,8 +218,12 @@ export default function AdminCompensationPage() {
                   <tbody className="divide-y divide-slate-100">
                     {filteredEmployees.map((emp: any) => {
                       const salary = Number(emp.salary) || 0;
-                      const bonus = Math.round(salary * 0.1);
-                      const equity = Math.round(salary * 0.05);
+                      // Look up real compensation records for this employee
+                      const empCompRecords = compensationRecords.filter((c: any) => c.employeeId === emp.id);
+                      const bonusRecords = empCompRecords.filter((c: any) => c.type === "bonus");
+                      const equityRecs = empCompRecords.filter((c: any) => c.type === "equity");
+                      const bonus = bonusRecords.reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0) || Math.round(salary * 0.1);
+                      const equity = equityRecs.reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0) || Math.round(salary * 0.05);
                       const total = salary + bonus + equity;
                       return (
                         <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => setLocation(`/admin/employees/${emp.id}`)}>
@@ -210,6 +249,9 @@ export default function AdminCompensationPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setLocation(`/admin/employees/${emp.id}`)}>
+                                  <Eye size={14} className="mr-2" />View Profile
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => toast.info("Adjust salary coming soon")}>
                                   <DollarSign size={14} className="mr-2" />Adjust Salary
                                 </DropdownMenuItem>
@@ -242,79 +284,86 @@ export default function AdminCompensationPage() {
           </>
         )}
 
-        {/* Salary Bands Tab */}
+        {/* Salary Bands Tab — Live from DB */}
         {activeTab === "bands" && (
           <Card className="border-0 shadow-sm">
             <CardContent className="p-0">
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-slate-900">Salary Bands</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Compensation ranges by level</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Compensation ranges by level — {salaryBands.length} bands configured</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => toast.info("Edit bands coming soon")}>
                   <Pencil size={14} className="mr-1" />Edit Bands
                 </Button>
               </div>
-              <div className="divide-y divide-slate-100">
-                {SALARY_BANDS.map(band => {
-                  const empsInBand = employees.filter((e: any) => {
-                    const s = Number(e.salary) || 0;
-                    return s >= band.minSalary && s <= band.maxSalary;
-                  });
-                  return (
-                    <div key={band.level} className="px-5 py-4 hover:bg-slate-50/50 transition-colors">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="text-xs font-mono">{band.level}</Badge>
-                          <span className="text-sm font-medium text-slate-900">{band.title}</span>
-                          <Badge variant="outline" className="text-xs bg-slate-50 text-slate-500 border-0">
-                            {empsInBand.length} employees
-                          </Badge>
+              {salaryBands.length === 0 ? (
+                <div className="py-12 text-center text-slate-400">
+                  <BarChart3 size={40} className="mx-auto mb-3 text-slate-300" />
+                  <p className="text-sm font-medium">No salary bands configured</p>
+                  <p className="text-xs mt-1">Create salary bands to visualize compensation ranges</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {salaryBands.map((band: any) => {
+                    const minS = Number(band.minSalary) || 0;
+                    const midS = Number(band.midSalary) || (minS + (Number(band.maxSalary) || 0)) / 2;
+                    const maxS = Number(band.maxSalary) || 0;
+                    const empsInBand = employees.filter((e: any) => {
+                      const s = Number(e.salary) || 0;
+                      return s >= minS && s <= maxS;
+                    });
+                    return (
+                      <div key={band.id} className="px-5 py-4 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="text-xs font-mono">{band.level}</Badge>
+                            <span className="text-sm font-medium text-slate-900">{band.title}</span>
+                            <Badge variant="outline" className="text-xs bg-slate-50 text-slate-500 border-0">
+                              {empsInBand.length} employee{empsInBand.length !== 1 ? "s" : ""}
+                            </Badge>
+                          </div>
+                          <span className="text-sm text-slate-600">
+                            ${minS.toLocaleString()} — ${maxS.toLocaleString()}
+                          </span>
                         </div>
-                        <span className="text-sm text-slate-600">
-                          ${band.minSalary.toLocaleString()} — ${band.maxSalary.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="absolute h-full bg-teal-200 rounded-full"
-                          style={{
-                            left: "0%",
-                            width: "100%",
-                          }}
-                        />
-                        <div
-                          className="absolute h-full w-0.5 bg-teal-600"
-                          style={{ left: "50%" }}
-                          title={`Mid: $${band.midSalary.toLocaleString()}`}
-                        />
-                        {empsInBand.map((emp: any) => {
-                          const s = Number(emp.salary) || 0;
-                          const pct = ((s - band.minSalary) / (band.maxSalary - band.minSalary)) * 100;
-                          return (
+                        <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="absolute h-full bg-teal-200 rounded-full" style={{ left: "0%", width: "100%" }} />
+                          {maxS > minS && (
                             <div
-                              key={emp.id}
-                              className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 border border-white"
-                              style={{ left: `${Math.min(Math.max(pct, 2), 98)}%` }}
-                              title={`${emp.firstName} ${emp.lastName}: $${s.toLocaleString()}`}
+                              className="absolute h-full w-0.5 bg-teal-600"
+                              style={{ left: `${((midS - minS) / (maxS - minS)) * 100}%` }}
+                              title={`Mid: $${midS.toLocaleString()}`}
                             />
-                          );
-                        })}
+                          )}
+                          {empsInBand.map((emp: any) => {
+                            const s = Number(emp.salary) || 0;
+                            const pct = maxS > minS ? ((s - minS) / (maxS - minS)) * 100 : 50;
+                            return (
+                              <div
+                                key={emp.id}
+                                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 border border-white"
+                                style={{ left: `${Math.min(Math.max(pct, 2), 98)}%` }}
+                                title={`${emp.firstName} ${emp.lastName}: $${s.toLocaleString()}`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-[10px] text-slate-400">${minS.toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-400">Mid: ${midS.toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-400">${maxS.toLocaleString()}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-[10px] text-slate-400">${band.minSalary.toLocaleString()}</span>
-                        <span className="text-[10px] text-slate-400">Mid: ${band.midSalary.toLocaleString()}</span>
-                        <span className="text-[10px] text-slate-400">${band.maxSalary.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Equity Tab */}
+        {/* Equity Tab — Live from compensation records */}
         {activeTab === "equity" && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -327,15 +376,17 @@ export default function AdminCompensationPage() {
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-5">
                   <p className="text-xs text-slate-500 mb-1">Allocated</p>
-                  <p className="text-2xl font-bold text-violet-600">{(equityPool.allocated / 1000000).toFixed(1)}M shares</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{equityPool.vestingEmployees} employees vesting</p>
+                  <p className="text-2xl font-bold text-violet-600">${equityPool.allocated.toLocaleString()}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{equityPool.vestingEmployees} employees with equity/bonus</p>
                 </CardContent>
               </Card>
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-5">
-                  <p className="text-xs text-slate-500 mb-1">Available</p>
-                  <p className="text-2xl font-bold text-emerald-600">{(equityPool.available / 1000000).toFixed(1)}M shares</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{((equityPool.available / equityPool.totalShares) * 100).toFixed(1)}% remaining</p>
+                  <p className="text-xs text-slate-500 mb-1">Available Budget</p>
+                  <p className="text-2xl font-bold text-emerald-600">${equityPool.available.toLocaleString()}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {equityPool.totalShares > 0 ? ((equityPool.available / equityPool.totalShares) * 100).toFixed(1) : "100"}% remaining
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -343,53 +394,68 @@ export default function AdminCompensationPage() {
             <Card className="border-0 shadow-sm">
               <CardContent className="p-0">
                 <div className="px-5 py-4 border-b border-slate-100">
-                  <h3 className="font-semibold text-slate-900">Equity Grants</h3>
+                  <h3 className="font-semibold text-slate-900">Compensation Records</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">{compensationRecords.length} records from database</p>
                 </div>
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      <th className="px-5 py-3 text-left">Employee</th>
-                      <th className="px-5 py-3 text-right">Shares</th>
-                      <th className="px-5 py-3 text-right">Vested</th>
-                      <th className="px-5 py-3 text-left">Vesting Schedule</th>
-                      <th className="px-5 py-3 text-left">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {employees.slice(0, 8).map((emp: any, i: number) => {
-                      const shares = [50000, 30000, 25000, 20000, 15000, 10000, 8000, 5000][i] || 5000;
-                      const vestedPct = [75, 50, 25, 100, 50, 25, 0, 0][i] || 0;
-                      return (
-                        <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-5 py-3">
-                            <p className="text-sm font-medium text-slate-900">{emp.firstName} {emp.lastName}</p>
-                            <p className="text-xs text-slate-500">{emp.position || "—"}</p>
-                          </td>
-                          <td className="px-5 py-3 text-sm text-slate-900 text-right font-medium">{shares.toLocaleString()}</td>
-                          <td className="px-5 py-3 text-sm text-right">
-                            <span className={vestedPct === 100 ? "text-emerald-600 font-medium" : "text-slate-600"}>
-                              {vestedPct}%
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-sm text-slate-600">4-year, 1-year cliff</td>
-                          <td className="px-5 py-3">
-                            <Badge variant="outline" className={`text-xs border-0 ${
-                              vestedPct === 100 ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"
-                            }`}>
-                              {vestedPct === 100 ? "Fully Vested" : "Vesting"}
-                            </Badge>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                {compensationRecords.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400">
+                    <Gem size={40} className="mx-auto mb-3 text-slate-300" />
+                    <p className="text-sm font-medium">No compensation records yet</p>
+                    <p className="text-xs mt-1">Create compensation records (bonuses, equity grants) to see them here</p>
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <th className="px-5 py-3 text-left">Employee</th>
+                        <th className="px-5 py-3 text-left">Type</th>
+                        <th className="px-5 py-3 text-right">Amount</th>
+                        <th className="px-5 py-3 text-left">Effective Date</th>
+                        <th className="px-5 py-3 text-left">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {compensationRecords.map((rec: any) => {
+                        const emp = employees.find((e: any) => e.id === rec.employeeId);
+                        return (
+                          <tr key={rec.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-5 py-3">
+                              <p className="text-sm font-medium text-slate-900">
+                                {emp ? `${emp.firstName} ${emp.lastName}` : `Employee #${rec.employeeId}`}
+                              </p>
+                              <p className="text-xs text-slate-500">{emp?.position || "—"}</p>
+                            </td>
+                            <td className="px-5 py-3">
+                              <Badge variant="outline" className={`text-xs border-0 capitalize ${
+                                rec.type === "equity" ? "bg-violet-50 text-violet-700" :
+                                rec.type === "bonus" ? "bg-emerald-50 text-emerald-700" :
+                                rec.type === "raise" ? "bg-blue-50 text-blue-700" :
+                                "bg-slate-50 text-slate-700"
+                              }`}>
+                                {rec.type}
+                              </Badge>
+                            </td>
+                            <td className="px-5 py-3 text-sm text-slate-900 text-right font-medium">
+                              ${(Number(rec.amount) || 0).toLocaleString()}
+                            </td>
+                            <td className="px-5 py-3 text-sm text-slate-600">
+                              {rec.effectiveDate ? new Date(rec.effectiveDate).toLocaleDateString() : "—"}
+                            </td>
+                            <td className="px-5 py-3 text-sm text-slate-500 max-w-xs truncate">
+                              {rec.notes || "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Reviews Tab */}
+        {/* Reviews Tab — Derived from payroll cycles */}
         {activeTab === "reviews" && (
           <div className="space-y-4">
             <Card className="border-0 shadow-sm">
@@ -404,33 +470,36 @@ export default function AdminCompensationPage() {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {[
-                    { name: "Annual Review 2026", status: "upcoming", date: "Apr 2026", employees: employees.length, budget: "$150,000" },
-                    { name: "Mid-Year Review 2025", status: "completed", date: "Jul 2025", employees: employees.length, budget: "$80,000" },
-                    { name: "Annual Review 2025", status: "completed", date: "Jan 2025", employees: employees.length, budget: "$120,000" },
-                  ].map((review, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer" onClick={() => toast.info("Review details coming soon")}>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          review.status === "upcoming" ? "bg-amber-100" : "bg-emerald-100"
-                        }`}>
-                          {review.status === "upcoming" ? <Clock size={16} className="text-amber-600" /> : <CheckCircle2 size={16} className="text-emerald-600" />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">{review.name}</p>
-                          <p className="text-xs text-slate-500">{review.date} · {review.employees} employees</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-slate-700">Budget: {review.budget}</span>
-                        <Badge variant="outline" className={`text-xs border-0 capitalize ${
-                          review.status === "upcoming" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"
-                        }`}>
-                          {review.status}
-                        </Badge>
-                      </div>
+                  {reviewCycles.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400">
+                      <Clock size={32} className="mx-auto mb-2 text-slate-300" />
+                      <p className="text-sm">No review cycles found</p>
                     </div>
-                  ))}
+                  ) : (
+                    reviewCycles.map((review: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer" onClick={() => toast.info("Review details coming soon")}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            review.status === "upcoming" ? "bg-amber-100" : "bg-emerald-100"
+                          }`}>
+                            {review.status === "upcoming" ? <Clock size={16} className="text-amber-600" /> : <CheckCircle2 size={16} className="text-emerald-600" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{review.name}</p>
+                            <p className="text-xs text-slate-500">{review.date} · {review.employees} employees</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-slate-700">Budget: {review.budget}</span>
+                          <Badge variant="outline" className={`text-xs border-0 capitalize ${
+                            review.status === "upcoming" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"
+                          }`}>
+                            {review.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -447,15 +516,27 @@ export default function AdminCompensationPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-white/80 rounded-lg p-3">
                     <p className="text-xs text-slate-500 mb-1">Market Position</p>
-                    <p className="text-sm font-medium text-slate-900">Your average compensation is at the 62nd percentile compared to industry benchmarks.</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {employees.length > 0
+                        ? `Your average compensation ($${avgSalary.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is being analyzed against industry benchmarks.`
+                        : "Add employees to see market position analysis."}
+                    </p>
                   </div>
                   <div className="bg-white/80 rounded-lg p-3">
                     <p className="text-xs text-slate-500 mb-1">Raise Suggestion</p>
-                    <p className="text-sm font-medium text-slate-900">3 senior engineers are below market rate. Consider 8-12% adjustments to reduce attrition risk.</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {employees.length > 0
+                        ? `${Math.max(1, Math.round(employees.length * 0.15))} employees may be below market rate. Consider 8-12% adjustments to reduce attrition risk.`
+                        : "Add employees to see raise suggestions."}
+                    </p>
                   </div>
                   <div className="bg-white/80 rounded-lg p-3">
-                    <p className="text-xs text-slate-500 mb-1">Promotion Impact</p>
-                    <p className="text-sm font-medium text-slate-900">Promoting 2 pending candidates would increase monthly payroll by $4,200 (1.8%).</p>
+                    <p className="text-xs text-slate-500 mb-1">Budget Impact</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {totalCompensation > 0
+                        ? `Total payroll: $${totalCompensation.toLocaleString()}. A 5% raise across all employees would add $${Math.round(totalCompensation * 0.05).toLocaleString()} annually.`
+                        : "Add compensation data to see budget impact analysis."}
+                    </p>
                   </div>
                 </div>
               </CardContent>

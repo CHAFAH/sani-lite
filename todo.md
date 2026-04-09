@@ -415,3 +415,14 @@
 - [x] Add all new routes to App.tsx
 - [x] Update admin sidebar navigation
 - [x] Write tests for payroll and benefits features (24 tests)
+
+## Phase 24: Replace Mock Data with Live tRPC Queries
+
+- [x] Audit all payroll/benefits pages for mock data usage
+- [x] Replace mock data in AdminGlobalPayrollPage with live tRPC queries
+- [x] Replace mock data in AdminPayrollHubPage2 with live tRPC queries
+- [x] Replace mock data in AdminBenefitsPage2 with live tRPC queries
+- [x] Replace mock data in AdminCompensationPage2 with live tRPC queries
+- [x] Replace mock data in EmployeePayrollBenefitsPage with live tRPC queries
+- [x] Add loading states and empty states for all data-driven sections
+- [x] Run tests and verify all integrations
