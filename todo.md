@@ -426,3 +426,14 @@
 - [x] Replace mock data in EmployeePayrollBenefitsPage with live tRPC queries
 - [x] Add loading states and empty states for all data-driven sections
 - [x] Run tests and verify all integrations
+
+## Phase 25: Fix Employee List & Rebuild Org Chart
+
+- [x] Fix employee list not showing any employees (seeded 46 employees with full org hierarchy)
+- [x] Rebuild org chart as proper hierarchical tree (like Hobbii example)
+- [x] Show CEO at top, C-suite below, department heads, managers, team members
+- [x] Add connecting lines between nodes in the tree
+- [x] Implement expand/collapse for each node
+- [x] Show avatar, name, title, department on each node
+- [x] Add employee count badges on expandable nodes
+- [x] Test both employee list and org chart
