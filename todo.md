@@ -522,3 +522,10 @@
 - [x] "Contact Sales" button still goes to /book-demo
 - [x] "Get Started Free" CTA at bottom also redirects to signup
 - [x] Verified redirect works - lands on Manus OAuth login page with correct state
+
+## Phase 25: Redesign Sign-In Page with Company Logo
+- [x] Found the SaniLogo SVG component in MarketingLayout.tsx
+- [x] Redesigned login page with split layout: teal branding panel (left) + login form (right)
+- [x] Added SANI logo, tagline, feature pills, trust badges, Google OAuth icon
+- [x] Production version shows logo + loading spinner while redirecting to OAuth
+- [x] Tested redesigned login page - all 84 tests passing
