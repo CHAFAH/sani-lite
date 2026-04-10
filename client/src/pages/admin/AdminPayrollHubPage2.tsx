@@ -15,6 +15,7 @@ import {
   Receipt, Plus, Check, Play, MoreVertical, Download, FileText,
   TrendingUp, Calendar, DollarSign, Users, Clock, AlertTriangle,
   BarChart3, ArrowUpRight, Loader2, Search, Eye, RotateCcw,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -64,7 +65,6 @@ export default function AdminPayrollHubPage() {
   const paidCycles = cycles.filter((c: any) => c.status === "paid").length;
   const pendingCycles = cycles.filter((c: any) => c.status === "draft" || c.status === "approved").length;
 
-  // Derive audit log from real payroll cycles
   const auditLog = useMemo(() => {
     if (cycles.length === 0) return [];
     return cycles.flatMap((c: any) => {
@@ -104,71 +104,90 @@ export default function AdminPayrollHubPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Payroll Hub</h1>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Payroll Hub</h1>
             <p className="text-sm text-slate-500 mt-1">Centralized payroll management across all entities</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast.info("Export coming soon")}>
+            <Button variant="outline" className="border-slate-200" onClick={() => toast.info("Export coming soon")}>
               <Download size={16} className="mr-2" />Export
             </Button>
-            <Button className="bg-teal-600 hover:bg-teal-700" onClick={() => setShowCreate(true)}>
+            <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={() => setShowCreate(true)}>
               <Plus size={16} className="mr-2" />New Cycle
             </Button>
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 shadow-sm">
+        {/* KPI Stat Cards — matching dashboard design */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl">
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-2">
-                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
-                  <DollarSign size={20} className="text-teal-600" />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
+                  <DollarSign size={16} className="text-teal-600" />
                 </div>
-                <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-0">
-                  <ArrowUpRight size={12} className="mr-1" />+3.1%
-                </Badge>
+                <span className="ml-auto text-xs font-medium flex items-center gap-0.5 text-emerald-600">
+                  <ArrowUpRight size={12} />+3.1%
+                </span>
               </div>
-              <p className="text-2xl font-bold text-slate-900">${(totalPayroll / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-              <p className="text-xs text-slate-500 mt-1">Monthly Payroll</p>
+              <p className="text-3xl font-bold text-slate-900 tracking-tight">
+                ${(totalPayroll / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Monthly Payroll</p>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm">
+
+          <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl">
             <CardContent className="p-5">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mb-2">
-                <Calendar size={20} className="text-blue-600" />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Calendar size={16} className="text-blue-600" />
+                </div>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{cycles.length}</p>
-              <p className="text-xs text-slate-500 mt-1">Total Cycles</p>
+              <p className="text-3xl font-bold text-slate-900 tracking-tight">{cycles.length}</p>
+              <p className="text-xs text-slate-400 mt-1">Total Cycles</p>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm">
+
+          <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl">
             <CardContent className="p-5">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mb-2">
-                <Check size={20} className="text-emerald-600" />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                  <CheckCircle2 size={16} className="text-emerald-600" />
+                </div>
+                <span className="ml-auto text-xs font-medium flex items-center gap-0.5 text-emerald-600">
+                  <ArrowUpRight size={12} />Completed
+                </span>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{paidCycles}</p>
-              <p className="text-xs text-slate-500 mt-1">Completed</p>
+              <p className="text-3xl font-bold text-slate-900 tracking-tight">{paidCycles}</p>
+              <p className="text-xs text-slate-400 mt-1">Paid Cycles</p>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm">
+
+          <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl">
             <CardContent className="p-5">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mb-2">
-                <Clock size={20} className="text-amber-600" />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <Clock size={16} className="text-amber-600" />
+                </div>
+                {pendingCycles > 0 && (
+                  <span className="ml-auto text-xs font-medium flex items-center gap-0.5 text-amber-600">
+                    <AlertTriangle size={12} />{pendingCycles} pending
+                  </span>
+                )}
               </div>
-              <p className="text-2xl font-bold text-slate-900">{pendingCycles}</p>
-              <p className="text-xs text-slate-500 mt-1">Pending</p>
+              <p className="text-3xl font-bold text-slate-900 tracking-tight">{pendingCycles}</p>
+              <p className="text-xs text-slate-400 mt-1">Pending</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
           {(["cycles", "reports", "audit"] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors capitalize ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
                 activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -182,7 +201,7 @@ export default function AdminPayrollHubPage() {
           <>
             {/* Create Cycle Form */}
             {showCreate && (
-              <Card className="border-0 shadow-sm border-l-4 border-l-teal-500">
+              <Card className="border border-teal-200 shadow-sm bg-white rounded-2xl">
                 <CardContent className="p-5">
                   <h3 className="font-semibold text-slate-900 mb-4">Create Payroll Cycle</h3>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -206,7 +225,7 @@ export default function AdminPayrollHubPage() {
                   <div className="flex gap-2 mt-4">
                     <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancel</Button>
                     <Button
-                      className="bg-teal-600 hover:bg-teal-700"
+                      className="bg-teal-600 hover:bg-teal-700 text-white"
                       disabled={createMut.isPending}
                       onClick={() => {
                         if (!form.name) { toast.error("Cycle name is required"); return; }
@@ -242,11 +261,11 @@ export default function AdminPayrollHubPage() {
             </div>
 
             {/* Cycles Table */}
-            <Card className="border-0 shadow-sm">
+            <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl">
               <CardContent className="p-0">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <tr className="bg-slate-50/80 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                       <th className="px-5 py-3 text-left">Cycle</th>
                       <th className="px-5 py-3 text-left">Period</th>
                       <th className="px-5 py-3 text-left">Pay Date</th>
@@ -255,7 +274,7 @@ export default function AdminPayrollHubPage() {
                       <th className="px-5 py-3 text-center">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-50">
                     {filteredCycles.map((c: any) => (
                       <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-5 py-3">
@@ -333,23 +352,23 @@ export default function AdminPayrollHubPage() {
         {activeTab === "reports" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-              { title: "Payroll by Department", desc: "Breakdown of payroll costs per department", icon: BarChart3 },
-              { title: "Payroll by Country", desc: "Multi-country payroll distribution", icon: Receipt },
-              { title: "Payroll by Role", desc: "Compensation analysis by role level", icon: Users },
-              { title: "Tax Summary", desc: "Tax withholdings and social security by jurisdiction", icon: FileText },
-              { title: "Year-to-Date Report", desc: "Cumulative payroll costs and trends", icon: TrendingUp },
-              { title: "Budget vs Actual", desc: "Compare planned vs actual payroll spend", icon: DollarSign },
+              { title: "Payroll by Department", desc: "Breakdown of payroll costs per department", icon: BarChart3, color: "bg-teal-50 text-teal-600" },
+              { title: "Payroll by Country", desc: "Multi-country payroll distribution", icon: Receipt, color: "bg-blue-50 text-blue-600" },
+              { title: "Payroll by Role", desc: "Compensation analysis by role level", icon: Users, color: "bg-amber-50 text-amber-600" },
+              { title: "Tax Summary", desc: "Tax withholdings and social security by jurisdiction", icon: FileText, color: "bg-red-50 text-red-500" },
+              { title: "Year-to-Date Report", desc: "Cumulative payroll costs and trends", icon: TrendingUp, color: "bg-emerald-50 text-emerald-600" },
+              { title: "Budget vs Actual", desc: "Compare planned vs actual payroll spend", icon: DollarSign, color: "bg-violet-50 text-violet-600" },
             ].map((report, i) => (
-              <Card key={i} className="border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => toast.info(`${report.title} report coming soon`)}>
+              <Card key={i} className="border border-slate-100 shadow-sm bg-white rounded-2xl hover:shadow-md transition-shadow cursor-pointer" onClick={() => toast.info(`${report.title} report coming soon`)}>
                 <CardContent className="p-5 flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                    <report.icon size={20} className="text-slate-600" />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${report.color.split(" ")[0]}`}>
+                    <report.icon size={18} className={report.color.split(" ")[1]} />
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-slate-900">{report.title}</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">{report.desc}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{report.desc}</p>
                   </div>
-                  <Button variant="outline" size="sm" className="ml-auto flex-shrink-0">
+                  <Button variant="outline" size="sm" className="ml-auto flex-shrink-0 border-slate-200">
                     <Download size={14} className="mr-1" />Export
                   </Button>
                 </CardContent>
@@ -360,21 +379,21 @@ export default function AdminPayrollHubPage() {
 
         {/* Audit Log Tab */}
         {activeTab === "audit" && (
-          <Card className="border-0 shadow-sm">
+          <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl">
             <CardContent className="p-0">
               <div className="px-5 py-4 border-b border-slate-100">
                 <h3 className="font-semibold text-slate-900">Payroll Audit Log</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Complete history of all payroll actions</p>
+                <p className="text-xs text-slate-400 mt-0.5">Complete history of all payroll actions</p>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-50">
                 {auditLog.map((entry) => (
                   <div key={entry.id} className="px-5 py-3 flex items-center hover:bg-slate-50/50 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-3 flex-shrink-0">
-                      <FileText size={14} className="text-slate-500" />
+                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mr-3 flex-shrink-0">
+                      <FileText size={14} className="text-slate-400" />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-slate-900">{entry.action}</p>
-                      <p className="text-xs text-slate-500">{entry.details}</p>
+                      <p className="text-xs text-slate-400">{entry.details}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-slate-500">{entry.user}</p>
@@ -382,33 +401,39 @@ export default function AdminPayrollHubPage() {
                     </div>
                   </div>
                 ))}
+                {auditLog.length === 0 && (
+                  <div className="py-12 text-center text-slate-400">
+                    <FileText size={32} className="mx-auto mb-2 text-slate-300" />
+                    <p className="text-sm">No audit entries yet</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         )}
 
         {/* AI Forecasting */}
-        <Card className="border-0 shadow-sm bg-gradient-to-r from-violet-50 to-indigo-50">
+        <Card className="border border-slate-100 shadow-sm bg-gradient-to-r from-teal-50 to-emerald-50 rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
-                <TrendingUp size={16} className="text-violet-600" />
+              <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
+                <TrendingUp size={16} className="text-teal-600" />
               </div>
-              <h3 className="font-semibold text-slate-900">AI Payroll Forecasting</h3>
+              <h3 className="text-base font-semibold text-slate-900">AI Payroll Forecasting</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white/80 rounded-lg p-3">
-                <p className="text-xs text-slate-500 mb-1">Next Month Forecast</p>
+              <div className="bg-white/80 rounded-xl p-4">
+                <p className="text-xs text-slate-400 mb-1">Next Month Forecast</p>
                 <p className="text-lg font-bold text-slate-900">${((totalPayroll / 12) * 1.02).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                 <p className="text-xs text-amber-600 mt-0.5">+2% from scheduled raises</p>
               </div>
-              <div className="bg-white/80 rounded-lg p-3">
-                <p className="text-xs text-slate-500 mb-1">Q2 Budget Impact</p>
+              <div className="bg-white/80 rounded-xl p-4">
+                <p className="text-xs text-slate-400 mb-1">Q2 Budget Impact</p>
                 <p className="text-lg font-bold text-slate-900">${((totalPayroll / 4) * 1.05).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                 <p className="text-xs text-slate-500 mt-0.5">Including 3 planned hires</p>
               </div>
-              <div className="bg-white/80 rounded-lg p-3">
-                <p className="text-xs text-slate-500 mb-1">Annual Projection</p>
+              <div className="bg-white/80 rounded-xl p-4">
+                <p className="text-xs text-slate-400 mb-1">Annual Projection</p>
                 <p className="text-lg font-bold text-slate-900">${(totalPayroll * 1.08).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                 <p className="text-xs text-emerald-600 mt-0.5">Within budget (+8% YoY)</p>
               </div>

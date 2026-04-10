@@ -481,3 +481,10 @@
 - [x] Integrate Schengen payroll config with existing non-Schengen countries
 - [x] Fix TypeScript errors and ensure all 82 tests passing
 - [x] Verify payroll page displays all Schengen countries with correct tax calculations
+
+## Phase 21: Match Admin Pages to Landing Page Mockup Designs
+- [x] Examine landing page mockup images for exact design details
+- [x] Redesign Admin Dashboard overview to match landing page mockup image (Headcount stats, Employee Growth chart, Recent Activity, Department Breakdown donut)
+- [x] Redesign Global Payroll page to match landing page mockup image (KPI cards, bar chart by country, currency donut, compliance overview)
+- [x] Redesign Payroll Hub page to match landing page mockup image (stat cards, tab navigation, cycles table, AI Forecasting)
+- [x] Test all redesigned pages and verify visual accuracy (82 tests passing)
