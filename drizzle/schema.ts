@@ -29,6 +29,10 @@ export const companies = mysqlTable("companies", {
   industry: varchar("industry", { length: 100 }),
   size: varchar("size", { length: 50 }),
   website: varchar("website", { length: 255 }),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 30 }),
+  country: varchar("country", { length: 100 }),
+  address: text("address"),
   customDomain: varchar("customDomain", { length: 255 }).unique(),
   logoUrl: text("logoUrl"),
   primaryColor: varchar("primaryColor", { length: 7 }).default("#0D9488"),
@@ -36,6 +40,7 @@ export const companies = mysqlTable("companies", {
   subscriptionTier: mysqlEnum("subscriptionTier", ["starter", "growth", "enterprise"]).default("starter").notNull(),
   status: mysqlEnum("status", ["onboarding", "active", "suspended", "cancelled"]).default("onboarding").notNull(),
   kycVerified: boolean("kycVerified").default(false),
+  onboardingCompleted: boolean("onboardingCompleted").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

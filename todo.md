@@ -488,3 +488,17 @@
 - [x] Redesign Global Payroll page to match landing page mockup image (KPI cards, bar chart by country, currency donut, compliance overview)
 - [x] Redesign Payroll Hub page to match landing page mockup image (stat cards, tab navigation, cycles table, AI Forecasting)
 - [x] Test all redesigned pages and verify visual accuracy (82 tests passing)
+
+## Phase 22: Complete Company Onboarding & Employee Invitation Flow
+- [x] Audit existing schema, routes, and components
+- [x] Update DB schema: add company onboarding fields (email, phone, country, address, onboardingCompleted)
+- [x] Invitations table already existed with token, status, expiresAt
+- [x] Build tRPC procedures: company.get, company.update, company.uploadLogo, company.completeOnboarding
+- [x] Build tRPC procedures: invitation.validate (public), invitation.accept enhanced with returnPath
+- [x] Build company signup page (5-step wizard: Company Info, Branding, Domain, Plan, Invite Team)
+- [x] Build company profile/settings page with Profile, Branding, Domain tabs
+- [x] Build employee invitation UI (invite form in onboarding step 5)
+- [x] Build invitation acceptance page (/invite?token=... with login flow)
+- [x] Updated OAuth callback to handle returnPath for invite flow + redirect to /onboarding for new users
+- [x] Updated getLoginUrl() to accept optional returnPath parameter
+- [x] All 82 tests passing, verified in browser

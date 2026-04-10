@@ -74,7 +74,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "RBAC & Roles", icon: Lock, href: "/admin/rbac" },
       { label: "SSO Config", icon: Shield, href: "/admin/sso" },
-      { label: "Company", icon: Building2, href: "/admin/company" },
+      { label: "Company", icon: Building2, href: "/admin/company-settings" },
     ],
   },
 ];

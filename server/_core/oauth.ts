@@ -141,7 +141,24 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      const redirectPath = user ? getDashboardPathForRole(user.role) : "/admin";
+      // Check if state contains a returnPath (e.g., from invite flow)
+      let redirectPath = user ? getDashboardPathForRole(user.role) : "/admin";
+      try {
+        const decoded = Buffer.from(state, "base64").toString("utf-8");
+        if (decoded.startsWith("{")) {
+          const parsed = JSON.parse(decoded);
+          if (parsed.returnPath) {
+            redirectPath = parsed.returnPath;
+          }
+        }
+      } catch {
+        // state is not JSON, use default redirect
+      }
+
+      // If user has no company and no returnPath override, redirect to onboarding
+      if (user && !user.companyId && !redirectPath.startsWith("/invite")) {
+        redirectPath = "/onboarding";
+      }
 
       res.redirect(302, redirectPath);
     } catch (error) {

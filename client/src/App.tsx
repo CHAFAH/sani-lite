@@ -47,6 +47,7 @@ import DemoMode from "@/pages/DemoMode";
 
 // Company Onboarding
 import CompanyOnboarding from "./pages/app/CompanyOnboarding";
+import InviteAcceptPage from "./pages/app/InviteAcceptPage";
 
 // Admin Platform pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
@@ -59,7 +60,8 @@ import AdminDepartmentsPage from "./pages/admin/AdminDepartmentsPage";
 import AdminInvitationsPage from "./pages/admin/AdminInvitationsPage";
 import AdminRbacPage from "./pages/admin/AdminRbacPage";
 import AdminTimeOffPage from "./pages/admin/AdminTimeOffPage";
-import AdminFinanceOSPage from "@/pages/admin/AdminFinanceOSPage";
+import AdminFinanceOSPage from "./pages/admin/AdminFinanceOSPage";
+import AdminCompanySettingsPage from "./pages/admin/AdminCompanySettingsPage";
 import EmployeeExpensesPage from "@/pages/employee/EmployeeExpensesPage";
 import AdminPayrollHubPage from "./pages/admin/AdminPayrollHubPage2";
 import AdminGlobalPayrollPage from "./pages/admin/AdminGlobalPayrollPage";
@@ -151,6 +153,7 @@ function Router() {
 
       {/* ── Company Onboarding ── */}
       <Route path="/onboarding" component={CompanyOnboarding} />
+      <Route path="/invite" component={InviteAcceptPage} />
 
       {/* ══════════════════════════════════════════════
           ADMIN PLATFORM — /admin/*
@@ -182,6 +185,7 @@ function Router() {
       <Route path="/admin/workflows" component={AdminWorkflowsPage} />
       <Route path="/admin/sso" component={AdminSsoPage} />
       <Route path="/admin/finance" component={AdminFinanceOSPage} />
+      <Route path="/admin/company-settings" component={AdminCompanySettingsPage} />
 
       {/* ══════════════════════════════════════════════
           MANAGER PLATFORM — /manager/*

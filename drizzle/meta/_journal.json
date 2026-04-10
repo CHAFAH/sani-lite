@@ -50,6 +50,13 @@
       "when": 1775678770652,
       "tag": "0006_chilly_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1775816008976,
+      "tag": "0007_charming_zarek",
+      "breakpoints": true
     }
   ]
 }

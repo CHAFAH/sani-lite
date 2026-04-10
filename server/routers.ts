@@ -82,6 +82,9 @@ export const appRouter = router({
   // COMPANY ROUTER
   // ============================================================
   company: router({
+    get: companyProcedure.query(async ({ ctx }) => {
+      return getCompanyById(ctx.companyId);
+    }),
     create: protectedProcedure
       .input(z.object({
         name: z.string().min(1),
@@ -113,6 +116,40 @@ export const appRouter = router({
       await updateCompany(ctx.companyId, { kycVerified: true, status: "active" });
       return { success: true };
     }),
+    update: companyProcedure
+      .input(z.object({
+        name: z.string().optional(),
+        industry: z.string().optional(),
+        size: z.string().optional(),
+        website: z.string().optional(),
+        email: z.string().optional(),
+        phone: z.string().optional(),
+        country: z.string().optional(),
+        address: z.string().optional(),
+        customDomain: z.string().optional(),
+        logoUrl: z.string().optional(),
+        primaryColor: z.string().optional(),
+        secondaryColor: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await updateCompany(ctx.companyId, input);
+        return { success: true };
+      }),
+    completeOnboarding: companyProcedure.mutation(async ({ ctx }) => {
+      await updateCompany(ctx.companyId, { onboardingCompleted: true, status: "active" });
+      return { success: true };
+    }),
+    uploadLogo: companyProcedure
+      .input(z.object({ logoData: z.string(), mimeType: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const { storagePut } = await import("./storage");
+        const buffer = Buffer.from(input.logoData, "base64");
+        const ext = input.mimeType.split("/")[1] || "png";
+        const fileKey = `company-${ctx.companyId}/logo-${Date.now()}.${ext}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        await updateCompany(ctx.companyId, { logoUrl: url });
+        return { success: true, logoUrl: url };
+      }),
   }),
 
   // ============================================================
@@ -764,6 +801,14 @@ export const appRouter = router({
     revoke: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await updateInvitation(input.id, { status: "revoked" as any });
       return { success: true };
+    }),
+    validate: publicProcedure.input(z.object({ token: z.string() })).query(async ({ input }) => {
+      const invitation = await getInvitationByToken(input.token);
+      if (!invitation) return { valid: false, error: "Invalid invitation" };
+      if (invitation.status !== "pending") return { valid: false, error: "Invitation already used" };
+      if (new Date() > invitation.expiresAt) return { valid: false, error: "Invitation expired" };
+      const company = await getCompanyById(invitation.companyId);
+      return { valid: true, companyName: company?.name || "Unknown", role: invitation.role, email: invitation.email };
     }),
     accept: protectedProcedure.input(z.object({ token: z.string() })).mutation(async ({ input, ctx }) => {
       const invitation = await getInvitationByToken(input.token);
