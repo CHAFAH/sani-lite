@@ -472,3 +472,12 @@
 - [ ] Add country field to employee profile editing
 - [ ] Add country codes to employee contact information
 - [ ] Create country-based payroll compliance rules
+
+## Phase 20: Schengen Countries Integration with Accurate Tax Rates
+- [x] Research all 29 Schengen countries and their 2026 income tax rates
+- [x] Update shared/countries.ts with all Schengen countries and tax rates (Austria 55%, Denmark 60.5%, Bulgaria 10%, etc.)
+- [x] Add helper functions: getSchengenCountries(), getTaxRate(), getCurrency(), formatCountryWithTaxRate()
+- [x] Update AdminGlobalPayrollPage to use Schengen countries with accurate tax rates
+- [x] Integrate Schengen payroll config with existing non-Schengen countries
+- [x] Fix TypeScript errors and ensure all 82 tests passing
+- [x] Verify payroll page displays all Schengen countries with correct tax calculations

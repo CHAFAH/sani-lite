@@ -18,25 +18,36 @@ import {
   Loader2, ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getSchengenCountries } from "@shared/countries";
 
-/* ── Country payroll configs ── */
-const COUNTRIES = [
-  { code: "US", name: "United States", currency: "USD", taxRate: 0.22, socialSecurity: 0.062, compliance: "IRS W-2" },
-  { code: "GB", name: "United Kingdom", currency: "GBP", taxRate: 0.20, socialSecurity: 0.12, compliance: "HMRC PAYE" },
-  { code: "DE", name: "Germany", currency: "EUR", taxRate: 0.25, socialSecurity: 0.195, compliance: "Finanzamt" },
-  { code: "FR", name: "France", currency: "EUR", taxRate: 0.30, socialSecurity: 0.22, compliance: "URSSAF" },
-  { code: "CA", name: "Canada", currency: "CAD", taxRate: 0.205, socialSecurity: 0.0595, compliance: "CRA T4" },
-  { code: "AU", name: "Australia", currency: "AUD", taxRate: 0.325, socialSecurity: 0.115, compliance: "ATO PAYG" },
-  { code: "IN", name: "India", currency: "INR", taxRate: 0.20, socialSecurity: 0.12, compliance: "IT Act" },
-  { code: "NG", name: "Nigeria", currency: "NGN", taxRate: 0.24, socialSecurity: 0.10, compliance: "FIRS PAYE" },
-  { code: "KE", name: "Kenya", currency: "KES", taxRate: 0.30, socialSecurity: 0.06, compliance: "KRA PAYE" },
-  { code: "AE", name: "UAE", currency: "AED", taxRate: 0.0, socialSecurity: 0.05, compliance: "WPS" },
-  { code: "SG", name: "Singapore", currency: "SGD", taxRate: 0.07, socialSecurity: 0.17, compliance: "IRAS" },
-  { code: "JP", name: "Japan", currency: "JPY", taxRate: 0.23, socialSecurity: 0.15, compliance: "NTA" },
-  { code: "BR", name: "Brazil", currency: "BRL", taxRate: 0.275, socialSecurity: 0.14, compliance: "eSocial" },
-  { code: "ZA", name: "South Africa", currency: "ZAR", taxRate: 0.26, socialSecurity: 0.01, compliance: "SARS PAYE" },
-  { code: "SA", name: "Saudi Arabia", currency: "SAR", taxRate: 0.0, socialSecurity: 0.10, compliance: "GOSI" },
+/* ── Country payroll configs (Schengen countries with accurate 2026 tax rates) ── */
+const SCHENGEN_PAYROLL_CONFIG = getSchengenCountries().map((country: any) => ({
+  code: country.code,
+  name: country.name,
+  currency: country.currency || "EUR",
+  taxRate: (country.taxRate || 0) / 100, // Convert percentage to decimal
+  flag: country.flag,
+  isSchengen: true,
+}));
+
+// Fallback for non-Schengen countries
+const OTHER_COUNTRIES = [
+  { code: "US", name: "United States", currency: "USD", taxRate: 0.22, flag: "🇺🇸" },
+  { code: "GB", name: "United Kingdom", currency: "GBP", taxRate: 0.20, flag: "🇬🇧" },
+  { code: "CA", name: "Canada", currency: "CAD", taxRate: 0.205, flag: "🇨🇦" },
+  { code: "AU", name: "Australia", currency: "AUD", taxRate: 0.325, flag: "🇦🇺" },
+  { code: "IN", name: "India", currency: "INR", taxRate: 0.20, flag: "🇮🇳" },
+  { code: "NG", name: "Nigeria", currency: "NGN", taxRate: 0.24, flag: "🇳🇬" },
+  { code: "KE", name: "Kenya", currency: "KES", taxRate: 0.30, flag: "🇰🇪" },
+  { code: "AE", name: "UAE", currency: "AED", taxRate: 0.0, flag: "🇦🇪" },
+  { code: "SG", name: "Singapore", currency: "SGD", taxRate: 0.07, flag: "🇸🇬" },
+  { code: "JP", name: "Japan", currency: "JPY", taxRate: 0.23, flag: "🇯🇵" },
+  { code: "BR", name: "Brazil", currency: "BRL", taxRate: 0.275, flag: "🇧🇷" },
+  { code: "ZA", name: "South Africa", currency: "ZAR", taxRate: 0.26, flag: "🇿🇦" },
+  { code: "SA", name: "Saudi Arabia", currency: "SAR", taxRate: 0.0, flag: "🇸🇦" },
 ];
+
+const COUNTRIES = [...SCHENGEN_PAYROLL_CONFIG, ...OTHER_COUNTRIES];
 
 const PAY_SCHEDULES = [
   { value: "weekly", label: "Weekly" },
@@ -111,7 +122,7 @@ export default function AdminGlobalPayrollPage() {
     const config = COUNTRIES.find(c => c.name === country);
     if (!config) return { tax: salary * 0.2, social: salary * 0.1, net: salary * 0.7 };
     const tax = salary * config.taxRate;
-    const social = salary * config.socialSecurity;
+    const social = salary * ((config as any).socialSecurity || 0.1); // Default 10% if not specified
     const net = salary - tax - social;
     return { tax, social, net };
   };
@@ -222,7 +233,7 @@ export default function AdminGlobalPayrollPage() {
                         <CheckCircle2 size={10} className="mr-1" />Compliant
                       </Badge>
                     </div>
-                    <div className="text-xs text-slate-400">{config?.compliance || "Local"}</div>
+                    <div className="text-xs text-slate-400">{(config as any)?.compliance || "Local"}</div>
                     <ChevronRight size={16} className="text-slate-300 ml-3" />
                   </div>
                 );
