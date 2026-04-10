@@ -52,6 +52,7 @@ import {
 } from "./db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { sendInvitationEmail } from "./email";
 
 // ============================================================
 // PROTECTED PROCEDURE WITH COMPANY CONTEXT
@@ -786,6 +787,7 @@ export const appRouter = router({
       .input(z.object({
         email: z.string().email(), role: z.enum(["admin", "hr_admin", "manager", "employee"]).optional(),
         departmentId: z.number().optional(), managerId: z.number().optional(),
+        origin: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const token = crypto.randomUUID();
@@ -795,7 +797,57 @@ export const appRouter = router({
           departmentId: input.departmentId, managerId: input.managerId,
           token, invitedBy: ctx.user.id, expiresAt,
         });
-        return { success: true, invitationId: result.insertId, token };
+
+        // Send invitation email
+        const company = await getCompanyById(ctx.companyId);
+        const origin = input.origin || "https://sanilite-ghfksw6x.manus.space";
+        const inviteLink = `${origin}/invite?token=${token}`;
+        let emailSent = false;
+        try {
+          const emailResult = await sendInvitationEmail({
+            recipientEmail: input.email,
+            companyName: company?.name || "Your Company",
+            companyLogo: company?.logoUrl,
+            inviterName: ctx.user.name || "Admin",
+            role: input.role || "employee",
+            inviteLink,
+            expiresAt,
+          });
+          emailSent = emailResult.success;
+          if (!emailResult.success) {
+            console.warn(`[Invitation] Email failed for ${input.email}: ${emailResult.error}`);
+          }
+        } catch (err) {
+          console.warn(`[Invitation] Email error for ${input.email}:`, err);
+        }
+
+        return { success: true, invitationId: result.insertId, token, emailSent };
+      }),
+    resend: companyProcedure
+      .input(z.object({ id: z.number(), origin: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        const invitations = await getInvitationsByCompanyId(ctx.companyId);
+        const invitation = invitations.find((i: any) => i.id === input.id);
+        if (!invitation) throw new TRPCError({ code: "NOT_FOUND", message: "Invitation not found" });
+        if (invitation.status !== "pending") throw new TRPCError({ code: "BAD_REQUEST", message: "Can only resend pending invitations" });
+
+        const company = await getCompanyById(ctx.companyId);
+        const origin = input.origin || "https://sanilite-ghfksw6x.manus.space";
+        const inviteLink = `${origin}/invite?token=${invitation.token}`;
+        const emailResult = await sendInvitationEmail({
+          recipientEmail: invitation.email,
+          companyName: company?.name || "Your Company",
+          companyLogo: company?.logoUrl,
+          inviterName: ctx.user.name || "Admin",
+          role: invitation.role,
+          inviteLink,
+          expiresAt: invitation.expiresAt,
+        });
+
+        if (!emailResult.success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Failed to send email: ${emailResult.error}` });
+        }
+        return { success: true, messageId: emailResult.messageId };
       }),
     list: companyProcedure.query(async ({ ctx }) => getInvitationsByCompanyId(ctx.companyId)),
     revoke: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {

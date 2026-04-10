@@ -186,6 +186,8 @@ function Router() {
       <Route path="/admin/sso" component={AdminSsoPage} />
       <Route path="/admin/finance" component={AdminFinanceOSPage} />
       <Route path="/admin/company-settings" component={AdminCompanySettingsPage} />
+      <Route path="/admin/invitations" component={AdminInvitationsPage} />
+      <Route path="/admin/departments" component={AdminDepartmentsPage} />
 
       {/* ══════════════════════════════════════════════
           MANAGER PLATFORM — /manager/*

@@ -502,3 +502,16 @@
 - [x] Updated OAuth callback to handle returnPath for invite flow + redirect to /onboarding for new users
 - [x] Updated getLoginUrl() to accept optional returnPath parameter
 - [x] All 82 tests passing, verified in browser
+
+## Phase 23: Automated Email Notification System for Invitations
+- [x] Audit existing notification infrastructure (notifyOwner only sends to owner, not arbitrary emails)
+- [x] Install Resend email SDK and build email service (server/email.ts)
+- [x] Create HTML email template with teal gradient header, company branding, CTA button, info box
+- [x] Create welcome email template for accepted invitations
+- [x] Wire email sending into invitation.create tRPC procedure (auto-sends on invite)
+- [x] Add resend invitation mutation (invitation.resend)
+- [x] Update AdminInvitationsPage with email status, resend button, copy link, stat cards
+- [x] Add Invitations link to admin sidebar navigation
+- [x] Add /admin/invitations route to App.tsx
+- [x] Validate Resend API key with vitest (84 tests passing)
+- [x] Test end-to-end invitation email flow
