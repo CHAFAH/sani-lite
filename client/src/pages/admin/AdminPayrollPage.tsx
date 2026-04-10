@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign, Plus, Check, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CountrySelect } from "@/components/CountrySelect";
 
 export default function AdminPayrollPage() {
   const { data: payroll = [] } = trpc.payroll.list.useQuery();
@@ -21,7 +22,7 @@ export default function AdminPayrollPage() {
   const paidMut = trpc.payroll.markPaid.useMutation({ onSuccess: () => { utils.payroll.list.invalidate(); toast.success("Marked paid"); } });
 
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ employeeId: 0, payrollCycle: "", baseSalary: "", grossPay: "", deductions: "0", netPay: "", currency: "USD" });
+  const [form, setForm] = useState({ employeeId: 0, payrollCycle: "", baseSalary: "", grossPay: "", deductions: "0", netPay: "", currency: "USD", country: "US" });
 
   const getEmpName = (id: number) => { const e = employees.find((e: any) => e.id === id); return e ? `${e.firstName} ${e.lastName}` : `#${id}`; };
   const statusColors: Record<string, string> = { draft: "bg-slate-50 text-slate-600 border-slate-200", approved: "bg-blue-50 text-blue-700 border-blue-200", processed: "bg-amber-50 text-amber-700 border-amber-200", paid: "bg-emerald-50 text-emerald-700 border-emerald-200" };
@@ -44,6 +45,14 @@ export default function AdminPayrollPage() {
                   </Select>
                 </div>
                 <div><Label>Payroll Cycle</Label><Input value={form.payrollCycle} onChange={e => setForm(p => ({ ...p, payrollCycle: e.target.value }))} placeholder="e.g. March 2026" /></div>
+                <div>
+                  <Label>Country</Label>
+                  <CountrySelect
+                    value={form.country}
+                    onChange={(value) => setForm(p => ({ ...p, country: value }))}
+                    placeholder="Select country"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Base Salary</Label><Input value={form.baseSalary} onChange={e => setForm(p => ({ ...p, baseSalary: e.target.value }))} /></div>
                   <div><Label>Gross Pay</Label><Input value={form.grossPay} onChange={e => setForm(p => ({ ...p, grossPay: e.target.value }))} /></div>

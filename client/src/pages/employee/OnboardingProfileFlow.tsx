@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { CountrySelect } from "@/components/CountrySelect";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -182,12 +183,10 @@ export default function OnboardingProfileFlow() {
                     <Label htmlFor="country" className="text-sm font-medium">
                       Country
                     </Label>
-                    <Input
-                      id="country"
-                      placeholder="United States"
+                    <CountrySelect
                       value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                      className="mt-1"
+                      onChange={(value) => setFormData({ ...formData, country: value })}
+                      placeholder="Select your country"
                     />
                   </div>
                 </div>
@@ -202,7 +201,7 @@ export default function OnboardingProfileFlow() {
                   </Label>
                   <Input
                     id="position"
-                    placeholder="Software Engineer"
+                    placeholder="e.g., Software Engineer"
                     value={formData.position}
                     onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                     className="mt-1"
@@ -214,7 +213,7 @@ export default function OnboardingProfileFlow() {
                   </Label>
                   <Input
                     id="department"
-                    placeholder="Engineering"
+                    placeholder="e.g., Engineering"
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     className="mt-1"
@@ -224,17 +223,20 @@ export default function OnboardingProfileFlow() {
                   <Label htmlFor="employmentType" className="text-sm font-medium">
                     Employment Type
                   </Label>
-                  <Select value={formData.employmentType} onValueChange={(value) =>
-                    setFormData({ ...formData, employmentType: value })
-                  }>
-                    <SelectTrigger className="mt-1">
+                  <Select
+                    value={formData.employmentType}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, employmentType: value })
+                    }
+                  >
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="full_time">Full Time</SelectItem>
                       <SelectItem value="part_time">Part Time</SelectItem>
                       <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="temporary">Temporary</SelectItem>
+                      <SelectItem value="intern">Intern</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -243,32 +245,13 @@ export default function OnboardingProfileFlow() {
 
             {step === "banking" && (
               <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-900">
-                    Your banking information is encrypted and securely stored for payroll processing.
-                  </p>
-                </div>
-                <div>
-                  <Label htmlFor="accountHolderName" className="text-sm font-medium">
-                    Account Holder Name
-                  </Label>
-                  <Input
-                    id="accountHolderName"
-                    placeholder="John Doe"
-                    value={formData.accountHolderName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, accountHolderName: e.target.value })
-                    }
-                    className="mt-1"
-                  />
-                </div>
                 <div>
                   <Label htmlFor="bankName" className="text-sm font-medium">
                     Bank Name
                   </Label>
                   <Input
                     id="bankName"
-                    placeholder="Chase Bank"
+                    placeholder="e.g., Chase Bank"
                     value={formData.bankName}
                     onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                     className="mt-1"
@@ -276,27 +259,13 @@ export default function OnboardingProfileFlow() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="routingNumber" className="text-sm font-medium">
-                      Routing Number
-                    </Label>
-                    <Input
-                      id="routingNumber"
-                      placeholder="021000021"
-                      value={formData.routingNumber}
-                      onChange={(e) =>
-                        setFormData({ ...formData, routingNumber: e.target.value })
-                      }
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="accountNumber" className="text-sm font-medium">
                       Account Number
                     </Label>
                     <Input
                       id="accountNumber"
+                      placeholder="••••••••"
                       type="password"
-                      placeholder="••••••••••••••••"
                       value={formData.accountNumber}
                       onChange={(e) =>
                         setFormData({ ...formData, accountNumber: e.target.value })
@@ -304,24 +273,51 @@ export default function OnboardingProfileFlow() {
                       className="mt-1"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="routingNumber" className="text-sm font-medium">
+                      Routing Number
+                    </Label>
+                    <Input
+                      id="routingNumber"
+                      placeholder="••••••••"
+                      type="password"
+                      value={formData.routingNumber}
+                      onChange={(e) =>
+                        setFormData({ ...formData, routingNumber: e.target.value })
+                      }
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="accountHolderName" className="text-sm font-medium">
+                    Account Holder Name
+                  </Label>
+                  <Input
+                    id="accountHolderName"
+                    placeholder="Full Name"
+                    value={formData.accountHolderName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, accountHolderName: e.target.value })
+                    }
+                    className="mt-1"
+                  />
                 </div>
               </div>
             )}
 
             {step === "complete" && (
-              <div className="text-center space-y-4">
-                <div className="flex justify-center mb-6">
-                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <CheckCircle2 size={32} className="text-emerald-600" />
-                  </div>
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">Profile Complete!</h2>
-                <p className="text-slate-600">
-                  Welcome to the team! Your profile has been successfully set up.
+              <div className="text-center py-8">
+                <CheckCircle2 size={48} className="mx-auto mb-4 text-emerald-500" />
+                <h2 className="text-xl font-semibold text-slate-900 mb-2">
+                  Profile Complete!
+                </h2>
+                <p className="text-slate-600 mb-6">
+                  Your profile has been successfully set up. You can now access all features.
                 </p>
                 <Button
                   onClick={() => setLocation("/employee/dashboard")}
-                  className="mt-6 w-full"
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   Go to Dashboard
                 </Button>
@@ -330,21 +326,33 @@ export default function OnboardingProfileFlow() {
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
+        {/* Navigation Buttons */}
         {step !== "complete" && (
-          <div className="mt-6 flex justify-between gap-4">
+          <div className="flex gap-4 mt-6 justify-between">
             <Button
               variant="outline"
               onClick={handleBack}
-              disabled={step === "personal" || isSubmitting}
+              disabled={step === "personal"}
             >
               <ArrowLeft size={16} className="mr-2" />
               Back
             </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 size={16} className="mr-2 animate-spin" />}
-              {step === "banking" ? "Complete" : "Next"}
-              {!isSubmitting && <ArrowRight size={16} className="ml-2" />}
+            <Button
+              onClick={handleNext}
+              disabled={isSubmitting}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Next
+                  <ArrowRight size={16} className="ml-2" />
+                </>
+              )}
             </Button>
           </div>
         )}

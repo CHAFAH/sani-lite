@@ -460,3 +460,15 @@
 - [x] Fix logout redirect - modified useAuth hook to redirect to login page after logout
 - [x] Verify logout works correctly and redirects to login page
 - [x] Verify both Chafah and dev accounts can see their respective employees
+
+## Phase 19: Global Country Integration with Flags & Codes
+- [x] Install country-codes-flags-phone-codes npm package
+- [x] Create shared/countries.ts utility with COUNTRIES array and helper functions
+- [x] Create CountrySelect component for reusable country selector with flags
+- [x] Add CountrySelect to OnboardingProfileFlow (personal step)
+- [x] Add country field to AdminPayrollPage form with CountrySelect
+- [x] Verify all 82 tests still passing
+- [ ] Add country selector to EmployeeOnboardingPage (main onboarding flow)
+- [ ] Add country field to employee profile editing
+- [ ] Add country codes to employee contact information
+- [ ] Create country-based payroll compliance rules
