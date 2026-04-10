@@ -515,3 +515,10 @@
 - [x] Add /admin/invitations route to App.tsx
 - [x] Validate Resend API key with vitest (84 tests passing)
 - [x] Test end-to-end invitation email flow
+
+## Phase 24: Pricing Page Signup Fix
+- [x] Fix pricing page signup buttons to redirect to signup/onboarding flow
+- [x] "Start Free Trial" buttons now redirect to OAuth login with returnPath=/onboarding
+- [x] "Contact Sales" button still goes to /book-demo
+- [x] "Get Started Free" CTA at bottom also redirects to signup
+- [x] Verified redirect works - lands on Manus OAuth login page with correct state

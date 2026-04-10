@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { useRef, useEffect } from "react";
+import { getLoginUrl } from "@/const";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -148,7 +149,13 @@ export default function Pricing() {
                     </ul>
 
                     <Button
-                      onClick={() => setLocation("/book-demo")}
+                      onClick={() => {
+                        if (tier.cta === "Contact Sales") {
+                          setLocation("/book-demo");
+                        } else {
+                          window.location.href = getLoginUrl("/onboarding");
+                        }
+                      }}
                       className={`w-full ${
                         tier.highlighted
                           ? "bg-teal-600 hover:bg-teal-700 text-white"
@@ -213,7 +220,13 @@ export default function Pricing() {
                         </ul>
 
                         <Button
-                          onClick={() => setLocation("/book-demo")}
+                          onClick={() => {
+                            if (tier.cta === "Contact Sales") {
+                              setLocation("/book-demo");
+                            } else {
+                              window.location.href = getLoginUrl("/onboarding");
+                            }
+                          }}
                           className={`w-full ${
                             tier.highlighted
                               ? "bg-teal-600 hover:bg-teal-700 text-white"
@@ -297,7 +310,9 @@ export default function Pricing() {
               Start your 14-day free trial today. No credit card required.
             </p>
             <Button
-              onClick={() => setLocation("/book-demo")}
+              onClick={() => {
+                window.location.href = getLoginUrl("/onboarding");
+              }}
               className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-6 text-lg rounded-xl"
             >
               Get Started Free
