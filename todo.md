@@ -453,3 +453,10 @@
 - [ ] Add more junior employees to team leads (expand hierarchy depth)
 - [ ] Test edit employee flow
 - [ ] Verify org chart shows deeper hierarchy
+
+## Phase 18: Multi-Account & Logout Fixes
+- [x] Fix employee visibility - add junior employees to correct company (120012)
+- [x] Add employees to dev company (180007) so dev account can see employees
+- [x] Fix logout redirect - modified useAuth hook to redirect to login page after logout
+- [x] Verify logout works correctly and redirects to login page
+- [x] Verify both Chafah and dev accounts can see their respective employees
