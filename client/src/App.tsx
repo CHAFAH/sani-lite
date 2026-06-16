@@ -154,6 +154,7 @@ function Router() {
 
       {/* ── Company Onboarding ── */}
       <Route path="/onboarding" component={CompanyOnboarding} />
+      <Route path="/signup" component={CompanyOnboarding} />
       <Route path="/invite" component={InviteAcceptPage} />
 
       {/* ══════════════════════════════════════════════

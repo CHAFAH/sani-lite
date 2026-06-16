@@ -355,7 +355,12 @@ function Navbar() {
                   )}
                 </div>
               ))}
-              <div className="pt-3 border-t border-border mt-3">
+              <div className="pt-3 border-t border-border mt-3 space-y-2">
+                <Link href="/login">
+                  <Button variant="outline" className="w-full rounded-xl" onClick={() => setMobileOpen(false)}>
+                    Login
+                  </Button>
+                </Link>
                 <Link href="/book-demo">
                   <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-xl">
                     Book a Demo

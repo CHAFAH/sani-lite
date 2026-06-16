@@ -2,7 +2,6 @@ import { useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -35,14 +34,41 @@ export default function CompanyOnboarding() {
   const [step, setStep] = useState<Step>("info");
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [, setLocation] = useLocation();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Redirect to login if not authenticated
+  if (!loading && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-white p-6">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Create your account first</h2>
+          <p className="text-sm text-slate-500 mb-6">You need to sign in or create an account before setting up your company.</p>
+          <div className="space-y-3">
+            <a href="/api/dev-login" className="block w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl text-center text-sm transition-all">Sign in with Google</a>
+            <a href="/login" className="block w-full py-3 px-4 border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-center text-sm transition-all">Back to Login</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
+      </div>
+    );
+  }
 
   // Step 1: Company Info
   const [formData, setFormData] = useState({
     name: "", industry: "", size: "", website: "", email: user?.email || "",
-    phone: "", country: "", address: "",
+    phoneCode: "", phone: "", country: "",
+    addressLine1: "", addressLine2: "", street: "", postalCode: "", city: "", region: "",
   });
+  const [countrySearch, setCountrySearch] = useState("");
+  const [phoneCodeSearch, setPhoneCodeSearch] = useState("");
 
   // Step 2: Branding
   const [brandingData, setBrandingData] = useState({
@@ -64,6 +90,7 @@ export default function CompanyOnboarding() {
   // Mutations
   const createCompanyMut = trpc.company.create.useMutation();
   const updateCompanyMut = trpc.company.update.useMutation();
+  const utils = trpc.useUtils();
   const uploadLogoMut = trpc.company.uploadLogo.useMutation();
   const createSubMut = trpc.subscription.create.useMutation();
   const completeOnboardingMut = trpc.company.completeOnboarding.useMutation();
@@ -111,17 +138,19 @@ export default function CompanyOnboarding() {
             size: formData.size || undefined, website: formData.website || undefined,
           });
           setCompanyId(result.companyId);
-          // Update additional fields
+          // Refetch auth so companyProcedure picks up the new companyId
+          await utils.auth.me.invalidate();
+          // Now update additional fields
           await updateCompanyMut.mutateAsync({
-            email: formData.email, phone: formData.phone || undefined,
-            country: formData.country || undefined, address: formData.address || undefined,
+            email: formData.email, phone: formData.phone ? `+${COUNTRIES.find(c => c.code === (formData.phoneCode || formData.country))?.phone || ""} ${formData.phone}` : undefined,
+            country: formData.country || undefined, address: [formData.addressLine1, formData.street, formData.addressLine2, formData.postalCode, formData.city, formData.region].filter(Boolean).join(", ") || undefined,
           });
         } else {
           await updateCompanyMut.mutateAsync({
             name: formData.name, industry: formData.industry || undefined,
             size: formData.size || undefined, website: formData.website || undefined,
-            email: formData.email, phone: formData.phone || undefined,
-            country: formData.country || undefined, address: formData.address || undefined,
+            email: formData.email, phone: formData.phone ? `+${COUNTRIES.find(c => c.code === (formData.phoneCode || formData.country))?.phone || ""} ${formData.phone}` : undefined,
+            country: formData.country || undefined, address: [formData.addressLine1, formData.street, formData.addressLine2, formData.postalCode, formData.city, formData.region].filter(Boolean).join(", ") || undefined,
           });
         }
         setStep("branding");
@@ -196,7 +225,6 @@ export default function CompanyOnboarding() {
 
   const isLoading = createCompanyMut.isPending || updateCompanyMut.isPending || uploadLogoMut.isPending || createSubMut.isPending || completeOnboardingMut.isPending;
 
-  const selectedCountry = COUNTRIES.find(c => c.code === formData.country);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FEFCF8] to-[#F0F9FF] p-4 md:p-8">
@@ -276,10 +304,22 @@ export default function CompanyOnboarding() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Country</label>
-                  <Select value={formData.country} onValueChange={v => setFormData({ ...formData, country: v })}>
+                  <Select value={formData.country} onValueChange={v => { setFormData({ ...formData, country: v }); setCountrySearch(""); }}>
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Select country" /></SelectTrigger>
                     <SelectContent>
-                      {COUNTRIES.map(c => (
+                      <div className="px-2 pb-2 sticky top-0 bg-white">
+                        <input
+                          type="text"
+                          placeholder="Search country..."
+                          value={countrySearch}
+                          onChange={(e) => setCountrySearch(e.target.value)}
+                          className="w-full h-8 px-3 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                          onKeyDown={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      {COUNTRIES.filter(c => 
+                        !countrySearch || c.name.toLowerCase().startsWith(countrySearch.toLowerCase()) || c.code.toLowerCase().startsWith(countrySearch.toLowerCase())
+                      ).map(c => (
                         <SelectItem key={c.code} value={c.code}>{c.flag} {c.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -293,11 +333,28 @@ export default function CompanyOnboarding() {
                 <div>
                   <label className="text-sm font-medium text-gray-700">Phone</label>
                   <div className="flex gap-2 mt-1">
-                    {selectedCountry && (
-                      <span className="flex items-center px-3 bg-gray-100 rounded-md text-sm text-gray-600 whitespace-nowrap">
-                        {selectedCountry.flag} {selectedCountry.phone}
-                      </span>
-                    )}
+                    <Select value={formData.phoneCode || formData.country} onValueChange={v => setFormData({ ...formData, phoneCode: v })}>
+                      <SelectTrigger className="w-[130px] flex-shrink-0">
+                        <SelectValue placeholder="Code" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="px-2 pb-2 sticky top-0 bg-white">
+                          <input
+                            type="text"
+                            placeholder="Search..."
+                            value={phoneCodeSearch}
+                            onChange={(e) => setPhoneCodeSearch(e.target.value)}
+                            className="w-full h-7 px-2 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        {COUNTRIES.filter(c =>
+                          !phoneCodeSearch || c.name.toLowerCase().startsWith(phoneCodeSearch.toLowerCase()) || c.phone.includes(phoneCodeSearch.replace("+", "")) || `+${c.phone}`.includes(phoneCodeSearch)
+                        ).map(c => (
+                          <SelectItem key={c.code} value={c.code}>{c.flag} {c.name} (+{c.phone})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Input placeholder="123 456 7890" value={formData.phone}
                       onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                   </div>
@@ -307,15 +364,50 @@ export default function CompanyOnboarding() {
                   <Input placeholder="https://acme.com" value={formData.website}
                     onChange={e => setFormData({ ...formData, website: e.target.value })} className="mt-1" />
                 </div>
-                <div className="md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700">Address</label>
-                  <Textarea placeholder="123 Business Ave, Suite 100, City, State, ZIP" value={formData.address}
-                    onChange={e => setFormData({ ...formData, address: e.target.value })} className="mt-1" rows={2} />
+
+                {/* Full Address */}
+                <div className="md:col-span-2 space-y-3 pt-2 border-t border-slate-100">
+                  <label className="text-sm font-semibold text-gray-700">Company Address</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-500">House / Apartment / Floor</label>
+                      <Input placeholder="Apt 4B, 3rd Floor" value={formData.addressLine1}
+                        onChange={e => setFormData({ ...formData, addressLine1: e.target.value })} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Street & Number</label>
+                      <Input placeholder="123 Business Avenue" value={formData.street}
+                        onChange={e => setFormData({ ...formData, street: e.target.value })} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Additional (Suite, Building)</label>
+                      <Input placeholder="Suite 200, Tower B" value={formData.addressLine2}
+                        onChange={e => setFormData({ ...formData, addressLine2: e.target.value })} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Postal / Area Code</label>
+                      <Input placeholder="2100" value={formData.postalCode}
+                        onChange={e => setFormData({ ...formData, postalCode: e.target.value })} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">City</label>
+                      <Input placeholder="Copenhagen" value={formData.city}
+                        onChange={e => setFormData({ ...formData, city: e.target.value })} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Region / State</label>
+                      <Input placeholder="Capital Region" value={formData.region}
+                        onChange={e => setFormData({ ...formData, region: e.target.value })} className="mt-1" />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <Button onClick={handleNext} className="w-full bg-teal-600 hover:bg-teal-700 h-11" disabled={isLoading}>
-                {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : <>Continue <ArrowRight className="w-4 h-4 ml-2" /></>}
-              </Button>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => window.location.href = "/login"} className="flex-1 h-11"><ArrowLeft className="w-4 h-4 mr-2" /> Back</Button>
+                <Button onClick={handleNext} className="flex-1 bg-teal-600 hover:bg-teal-700 h-11" disabled={isLoading}>
+                  {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : <>Continue <ArrowRight className="w-4 h-4 ml-2" /></>}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

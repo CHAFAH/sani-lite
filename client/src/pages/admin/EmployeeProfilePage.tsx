@@ -18,6 +18,7 @@ import {
   Star, CheckSquare, Target, FileText, MessageSquare, Rocket,
   User, Briefcase, Phone, Building2, Heart, ScrollText, CreditCard,
   Contact, Home, Info, AlertTriangle, Monitor, GraduationCap,
+  ChevronLeft, ChevronRight, Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -70,10 +71,13 @@ const SIDEBAR_SECTIONS = [
   { id: "training", label: "Training", icon: GraduationCap },
 ];
 
-function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
+function SectionHeader({ title, action, adminOnly }: { title: string; action?: React.ReactNode; adminOnly?: boolean }) {
   return (
-    <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex items-center justify-between">
-      <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">{title}</h3>
+    <div className="bg-slate-50 px-4 sm:px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <h3 className="text-xs sm:text-sm font-semibold text-slate-700 uppercase tracking-wider">{title}</h3>
+        {adminOnly && <Lock size={11} className="text-slate-400" />}
+      </div>
       {action}
     </div>
   );
@@ -81,12 +85,12 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 
 function ViewRow({ label, value, onClick }: { label: string; value: React.ReactNode; onClick?: () => void }) {
   return (
-    <div className="flex items-center py-3.5 px-5 border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors">
-      <span className="text-[15px] text-slate-500 w-52 shrink-0 font-medium">{label}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center py-3 px-4 sm:px-5 border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors gap-1 sm:gap-0">
+      <span className="text-[13px] sm:text-[15px] text-slate-500 sm:w-52 shrink-0 font-medium">{label}</span>
       {onClick ? (
-        <button onClick={onClick} className="text-[15px] text-teal-600 hover:underline font-medium">{value || "—"}</button>
+        <button onClick={onClick} className="text-[14px] sm:text-[15px] text-teal-600 hover:underline font-medium break-all">{value || "—"}</button>
       ) : (
-        <span className="text-[15px] text-slate-900 font-medium">{value || "—"}</span>
+        <span className="text-[14px] sm:text-[15px] text-slate-900 font-medium break-all">{value || "—"}</span>
       )}
     </div>
   );
@@ -94,9 +98,9 @@ function ViewRow({ label, value, onClick }: { label: string; value: React.ReactN
 
 function EditInputRow({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div className="flex items-center py-2.5 px-5 border-b border-slate-100 last:border-b-0">
-      <span className="text-[15px] text-slate-500 w-52 shrink-0 font-medium">{label}</span>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder || label} className="h-9 text-[15px] max-w-xs" />
+    <div className="flex flex-col sm:flex-row sm:items-center py-2.5 px-4 sm:px-5 border-b border-slate-100 last:border-b-0 gap-1 sm:gap-0">
+      <span className="text-[13px] sm:text-[15px] text-slate-500 sm:w-52 shrink-0 font-medium">{label}</span>
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder || label} className="h-9 text-[14px] sm:text-[15px] w-full sm:max-w-xs" />
     </div>
   );
 }
@@ -105,10 +109,10 @@ function EditSelectRow({ label, value, onChange, options, placeholder }: {
   label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; placeholder?: string;
 }) {
   return (
-    <div className="flex items-center py-2.5 px-5 border-b border-slate-100 last:border-b-0">
-      <span className="text-[15px] text-slate-500 w-52 shrink-0 font-medium">{label}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center py-2.5 px-4 sm:px-5 border-b border-slate-100 last:border-b-0 gap-1 sm:gap-0">
+      <span className="text-[13px] sm:text-[15px] text-slate-500 sm:w-52 shrink-0 font-medium">{label}</span>
       <Select value={value || "__none__"} onValueChange={(v) => onChange(v === "__none__" ? "" : v)}>
-        <SelectTrigger className="h-9 text-[15px] max-w-xs">
+        <SelectTrigger className="h-9 text-[14px] sm:text-[15px] w-full sm:max-w-xs">
           <SelectValue placeholder={placeholder || label} />
         </SelectTrigger>
         <SelectContent>
@@ -148,6 +152,7 @@ export default function EmployeeProfilePage() {
   const [editingSection, setEditingSection] = useState<"personal" | "admin" | null>(null);
   const [activeTab, setActiveTab] = useState("performance");
   const [activeSection, setActiveSection] = useState("basic");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const contentRef = useRef<HTMLDivElement>(null);
@@ -337,9 +342,9 @@ export default function EmployeeProfilePage() {
           </div>
 
           {/* Profile info below cover */}
-          <div className="relative px-6 pb-5">
+          <div className="relative px-4 sm:px-6 pb-5">
             {/* Profile Picture - half overlapping cover */}
-            <div className="absolute -top-14 left-6">
+            <div className="absolute -top-14 left-4 sm:left-6">
               <div className="relative group">
                 {emp.profilePictureUrl ? (
                   <img src={emp.profilePictureUrl} alt={fullName} className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg" />
@@ -354,24 +359,20 @@ export default function EmployeeProfilePage() {
                   </button>
                 )}
               </div>
+              {/* Status badge centered under picture */}
+              <div className="flex justify-center mt-2">
+                {getStatusBadge(emp.status)}
+              </div>
             </div>
 
-            {/* Name + position aligned vertically centered with the profile picture */}
-            <div className="flex items-center justify-between ml-[148px] min-h-[56px] pt-2">
-              <div className="flex items-center gap-4">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-slate-900">{fullName}</h1>
-                    {getStatusBadge(emp.status)}
-                  </div>
-                  <p className="text-base text-slate-600 mt-0.5">{emp.position || "No title"}</p>
-                  <p className="text-sm text-slate-400 mt-0.5">
-                    {[emp.department, emp.city, emp.country].filter(Boolean).join(" · ")}
-                  </p>
-                  {emp.metadata?.pronouns && (
-                    <p className="text-xs text-slate-400 mt-1">{emp.metadata.pronouns}</p>
-                  )}
-                </div>
+            {/* Name on straight line, department below */}
+            <div className="flex items-start justify-between ml-0 pt-[70px] sm:ml-[148px] sm:pt-2">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{fullName}</h1>
+                <p className="text-sm sm:text-[15px] text-slate-600 mt-1">{emp.position || "No title"}</p>
+                <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                  {[emp.department, emp.city, emp.country].filter(Boolean).join(" \u00b7 ")}
+                </p>
               </div>
 
               <DropdownMenu>
@@ -379,8 +380,8 @@ export default function EmployeeProfilePage() {
                   <Button variant="ghost" size="sm"><MoreVertical size={16} /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {isAdmin && <DropdownMenuItem onClick={() => setEditingSection("admin")}><Edit size={14} className="mr-2" />Edit (Admin)</DropdownMenuItem>}
-                  {isOwnProfile && <DropdownMenuItem onClick={() => setEditingSection("personal")}><Pencil size={14} className="mr-2" />Edit My Info</DropdownMenuItem>}
+                  {isAdmin && <DropdownMenuItem onClick={() => setEditingSection("admin")}><Edit size={14} className="mr-2" />Edit Job Info</DropdownMenuItem>}
+                  {isOwnProfile && <DropdownMenuItem onClick={() => setEditingSection("personal")}><Pencil size={14} className="mr-2" />Edit Personal Info</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                   {isAdmin && <DropdownMenuItem><Shield size={14} className="mr-2" />Change Role</DropdownMenuItem>}
                   {isAdmin && <DropdownMenuItem><Users2 size={14} className="mr-2" />Assign Manager</DropdownMenuItem>}
@@ -393,20 +394,22 @@ export default function EmployeeProfilePage() {
           </div>
         </div>
 
-        {/* ═══ Action Tabs (below header) ═══ */}
-        <div className="bg-white border border-slate-200 rounded-xl mb-6 px-6 py-3">
-          <div className="flex items-center justify-center gap-8">
+        {/* Action Tabs - equal grid, aligned icons */}
+        <div className="bg-white border border-slate-200 rounded-xl mb-6 overflow-x-auto">
+          <div className="grid grid-cols-6 min-w-[480px]">
             {ACTION_TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center gap-1.5 px-3 py-2 rounded-lg transition-all ${
-                    isActive ? "bg-teal-50 text-teal-700" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  className={`flex flex-col items-center justify-center gap-1.5 py-4 border-b-2 transition-all ${
+                    isActive ? "border-teal-600 bg-teal-50/50 text-teal-700" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
                 >
-                  <tab.icon size={18} className={isActive ? "text-teal-600" : ""} />
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isActive ? "bg-teal-100" : "bg-slate-100"}`}>
+                    <tab.icon size={18} className={isActive ? "text-teal-600" : "text-slate-400"} />
+                  </div>
                   <span className="text-[11px] font-medium">{tab.label}</span>
                 </button>
               );
@@ -415,11 +418,22 @@ export default function EmployeeProfilePage() {
         </div>
 
         {/* ═══ Main Content: Left Sidebar + Right Panel ═══ */}
-        <div className="flex gap-5">
-          {/* Left Sidebar Menu */}
-          <div className="w-[200px] flex-shrink-0">
+        <div className="flex gap-3">
+          {/* Left Sidebar Menu - hidden on mobile, collapsible on desktop */}
+          <div className={`hidden lg:block flex-shrink-0 transition-all duration-300 ${sidebarOpen ? "w-[180px]" : "w-[44px]"}`}>
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden sticky top-4">
-              <nav className="py-2">
+              {/* Toggle button */}
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="w-full flex items-center justify-center py-2 border-b border-slate-100 hover:bg-slate-50 text-slate-400"
+              >
+                {sidebarOpen ? (
+                  <ChevronLeft size={16} />
+                ) : (
+                  <ChevronRight size={16} />
+                )}
+              </button>
+              <nav className="py-1">
                 {SIDEBAR_SECTIONS.map((section) => {
                   const isActive = activeSection === section.id;
                   return (
@@ -430,14 +444,15 @@ export default function EmployeeProfilePage() {
                         const el = sectionRefs.current[section.id];
                         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
                       }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] transition-all ${
+                      title={!sidebarOpen ? section.label : undefined}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-[12px] transition-all ${
                         isActive
                           ? "bg-teal-50 text-teal-700 font-semibold border-l-2 border-teal-600"
                           : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent"
-                      }`}
+                      } ${!sidebarOpen ? "justify-center px-0" : ""}`}
                     >
-                      <section.icon size={15} className={isActive ? "text-teal-600" : "text-slate-400"} />
-                      {section.label}
+                      <section.icon size={14} className={`flex-shrink-0 ${isActive ? "text-teal-600" : "text-slate-400"}`} />
+                      {sidebarOpen && <span className="truncate">{section.label}</span>}
                     </button>
                   );
                 })}
@@ -486,9 +501,9 @@ export default function EmployeeProfilePage() {
 
             {/* Work */}
             <div ref={(el) => { sectionRefs.current["work"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Work" action={
+              <SectionHeader title="Work" adminOnly action={
                 isAdmin && editingSection !== "admin" ? (
-                  <button onClick={() => setEditingSection("admin")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit (Admin)</button>
+                  <button onClick={() => setEditingSection("admin")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
                 ) : null
               } />
               {editingSection === "admin" ? (
@@ -519,9 +534,9 @@ export default function EmployeeProfilePage() {
 
             {/* Employment */}
             <div ref={(el) => { sectionRefs.current["employment"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Employment" action={
+              <SectionHeader title="Employment" adminOnly action={
                 isAdmin && editingSection !== "admin" ? (
-                  <button onClick={() => setEditingSection("admin")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit (Admin)</button>
+                  <button onClick={() => setEditingSection("admin")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
                 ) : null
               } />
               <ViewRow label="Employment Type" value={emp.employmentType?.replace("_", " ")} />
@@ -541,7 +556,7 @@ export default function EmployeeProfilePage() {
 
             {/* Work Permit */}
             <div ref={(el) => { sectionRefs.current["work-permit"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Work Permit" />
+              <SectionHeader title="Work Permit" adminOnly />
               <ViewRow label="Permit Type" value={"\u2014"} />
               <ViewRow label="Permit Number" value={"\u2014"} />
               <ViewRow label="Issue Date" value={"\u2014"} />
@@ -551,9 +566,9 @@ export default function EmployeeProfilePage() {
 
             {/* Payroll */}
             <div ref={(el) => { sectionRefs.current["payroll"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Payroll" action={
+              <SectionHeader title="Payroll" adminOnly action={
                 isAdmin && editingSection !== "admin" ? (
-                  <button onClick={() => setEditingSection("admin")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit (Admin)</button>
+                  <button onClick={() => setEditingSection("admin")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
                 ) : null
               } />
               <ViewRow label="Salary" value={(isAdmin || isOwnProfile) && emp.salary ? `${emp.currency || "USD"} ${Number(emp.salary).toLocaleString()}` : "Restricted"} />
@@ -611,7 +626,7 @@ export default function EmployeeProfilePage() {
 
             {/* Assets */}
             <div ref={(el) => { sectionRefs.current["assets"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Assets" />
+              <SectionHeader title="Assets" adminOnly />
               <ViewRow label="Laptop" value={"\u2014"} />
               <ViewRow label="Phone" value={"\u2014"} />
               <ViewRow label="Access Card" value={"\u2014"} />

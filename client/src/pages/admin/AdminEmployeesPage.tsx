@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, Eye, Edit, Shield, Users2, Power, Trash2, ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
+import { Plus, Search, MoreVertical, Eye, Edit, Shield, Users2, Power, Trash2, ChevronLeft, ChevronRight, Settings2, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminEmployeesPage() {
@@ -22,9 +22,8 @@ export default function AdminEmployeesPage() {
   });
 
   const [search, setSearch] = useState("");
-  const [deptFilter, setDeptFilter] = useState("all");
-  const [roleFilter, setRoleFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [deptFilters, setDeptFilters] = useState<string[]>([]);
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
 
@@ -43,12 +42,11 @@ export default function AdminEmployeesPage() {
   const filtered = useMemo(() => {
     return employees.filter((e: any) => {
       const matchSearch = !search || `${e.firstName} ${e.lastName} ${e.email} ${e.department} ${e.position}`.toLowerCase().includes(search.toLowerCase());
-      const matchDept = deptFilter === "all" || e.department === deptFilter;
-      const matchRole = roleFilter === "all" || (e.role || "employee") === roleFilter;
-      const matchStatus = statusFilter === "all" || e.status === statusFilter;
-      return matchSearch && matchDept && matchRole && matchStatus;
+      const matchDept = deptFilters.length === 0 || deptFilters.includes(e.department);
+      const matchStatus = statusFilters.length === 0 || statusFilters.includes(e.status);
+      return matchSearch && matchDept && matchStatus;
     });
-  }, [employees, search, deptFilter, roleFilter, statusFilter]);
+  }, [employees, search, deptFilters, statusFilters]);
 
   // Pagination
   const totalPages = Math.ceil(filtered.length / perPage);
@@ -58,7 +56,7 @@ export default function AdminEmployeesPage() {
   }, [filtered, page, perPage]);
 
   // Reset page when filters change
-  useMemo(() => { setPage(1); }, [search, deptFilter, roleFilter, statusFilter, perPage]);
+  useMemo(() => { setPage(1); }, [search, deptFilters, statusFilters, perPage]);
 
   const statusColors: Record<string, string> = {
     active: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -92,28 +90,69 @@ export default function AdminEmployeesPage() {
         </div>
 
         {/* Search & Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input placeholder="Search name, email, department..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
           </div>
-          <Select value={deptFilter} onValueChange={setDeptFilter}>
-            <SelectTrigger className="w-[170px] h-9 text-sm"><SelectValue placeholder="Department" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              {departments.map((d: any) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[130px] h-9 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="on_leave">On Leave</SelectItem>
-              <SelectItem value="offboarded">Offboarded</SelectItem>
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 px-3 gap-1.5">
+                <Filter size={14} />
+                <span className="hidden sm:inline text-sm">Filters</span>
+                {(deptFilters.length > 0 || statusFilters.length > 0) && (
+                  <span className="min-w-[18px] h-[18px] rounded-full bg-teal-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {deptFilters.length + statusFilters.length}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 p-4 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Department</label>
+                <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                  {departments.map((d: any) => (
+                    <label key={d} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={deptFilters.includes(d)}
+                        onChange={(e) => {
+                          if (e.target.checked) setDeptFilters(prev => [...prev, d]);
+                          else setDeptFilters(prev => prev.filter(x => x !== d));
+                        }}
+                        className="w-3.5 h-3.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                      />
+                      <span className="text-sm text-slate-700">{d}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</label>
+                <div className="mt-2 space-y-1">
+                  {["active", "inactive", "on_leave", "offboarded"].map((s) => (
+                    <label key={s} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={statusFilters.includes(s)}
+                        onChange={(e) => {
+                          if (e.target.checked) setStatusFilters(prev => [...prev, s]);
+                          else setStatusFilters(prev => prev.filter(x => x !== s));
+                        }}
+                        className="w-3.5 h-3.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                      />
+                      <span className="text-sm text-slate-700 capitalize">{s.replace("_", " ")}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {(deptFilters.length > 0 || statusFilters.length > 0) && (
+                <Button variant="ghost" size="sm" className="w-full text-xs text-slate-500" onClick={() => { setDeptFilters([]); setStatusFilters([]); }}>
+                  Clear All Filters
+                </Button>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Table */}

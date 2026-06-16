@@ -16,6 +16,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { SaniLogo } from "@/components/MarketingLayout";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 
 interface NavItem {
   label: string;
@@ -82,10 +83,12 @@ const navGroups: NavGroup[] = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     Object.fromEntries(navGroups.map(g => [g.label, true]))
   );
   const { user, logout } = useAuth();
+  const { data: company } = trpc.company.get.useQuery(undefined, { retry: false });
 
   const toggleGroup = (label: string) => {
     setExpandedGroups(prev => ({ ...prev, [label]: !prev[label] }));
@@ -93,11 +96,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#F0F2F5" }}>
+      {/* Mobile overlay backdrop */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
       {/* Sidebar — Deep Navy */}
       <motion.aside
         animate={{ width: collapsed ? 72 : 264 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        className="flex flex-col"
+        className={`flex flex-col z-50 ${
+          /* Mobile: fixed overlay; Desktop: static */
+          "fixed lg:relative inset-y-0 left-0 transition-transform lg:translate-x-0"
+        } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
         style={{ minWidth: collapsed ? 72 : 264, background: "#0A2540" }}
       >
         {/* Logo */}
@@ -105,13 +116,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {!collapsed && (
             <Link href="/admin">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#00D4C8" }}>
-                  <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 16C14 16 18 10 28 14C38 18 32 24 24 24C16 24 10 30 20 34C30 38 34 32 34 32" stroke="white" strokeWidth="5" strokeLinecap="round" fill="none" />
-                  </svg>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: "#00D4C8" }}>
+                  {(company?.name || "S")[0].toUpperCase()}
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-bold text-sm tracking-tight text-white">SANI</span>
+                  <span className="font-bold text-sm tracking-tight text-white">{company?.name || "SANI"}</span>
                   <span className="text-[10px] font-semibold -mt-0.5" style={{ color: "#00D4C8" }}>ADMIN</span>
                 </div>
               </motion.div>
@@ -119,10 +128,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           )}
           {collapsed && (
             <Link href="/admin">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center mx-auto" style={{ background: "#00D4C8" }}>
-                <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 16C14 16 18 10 28 14C38 18 32 24 24 24C16 24 10 30 20 34C30 38 34 32 34 32" stroke="white" strokeWidth="5" strokeLinecap="round" fill="none" />
-                </svg>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mx-auto text-white font-bold text-sm" style={{ background: "#00D4C8" }}>
+                {(company?.name || "S")[0].toUpperCase()}
               </div>
             </Link>
           )}
@@ -161,7 +168,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {group.items.map((item) => {
                       const isActive = location === item.href || (item.href === "/admin" && location === "/admin/dashboard");
                       return (
-                        <Link key={item.href} href={item.href}>
+                        <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
                           <motion.div
                             whileHover={{ x: 2 }}
                             className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group relative"
@@ -228,7 +235,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <HelpCircle size={18} />
             {!collapsed && <span className="text-sm font-medium">Help</span>}
           </button>
-          <Link href="/admin/settings">
+          <Link href="/admin/settings" onClick={() => setMobileOpen(false)}>
             <div
               className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 w-full cursor-pointer"
               style={{ color: "rgba(255,255,255,0.5)" }}
@@ -265,10 +272,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 bg-white flex items-center justify-between px-6" style={{ borderBottom: "1px solid #E5E7EB" }}>
+        <header className="h-14 bg-white flex items-center justify-between px-4 lg:px-6" style={{ borderBottom: "1px solid #E5E7EB" }}>
           <div className="flex items-center gap-3 flex-1 max-w-md">
+            {/* Mobile hamburger */}
+            <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-lg hover:bg-slate-100">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-600"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
+            </button>
             <Search size={18} className="text-slate-400" />
-            <input type="text" placeholder="Search employees, payroll, reports..." className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
+            <input type="text" placeholder="Search employees, payroll, reports..." className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 hidden sm:block" />
           </div>
           <div className="flex items-center gap-2">
             <button className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors">

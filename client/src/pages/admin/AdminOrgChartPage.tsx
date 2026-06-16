@@ -138,7 +138,10 @@ export default function AdminOrgChartPage() {
 
         {/* Right Side Panel */}
         {selectedEmployee && (
-          <div className="w-[320px] flex-shrink-0 ml-4 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-lg animate-in slide-in-from-right-5 duration-200">
+          <>
+            {/* Mobile backdrop */}
+            <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSelectedEmployee(null)} />
+            <div className="fixed inset-y-0 right-0 w-[85vw] max-w-[320px] z-50 lg:relative lg:inset-auto lg:w-[320px] lg:z-auto flex-shrink-0 lg:ml-4 bg-white border-l lg:border border-slate-200 lg:rounded-2xl overflow-hidden shadow-lg animate-in slide-in-from-right-5 duration-200">
             {/* Panel pointer/header */}
             <div className="relative bg-gradient-to-br from-teal-600 to-teal-700 px-5 py-5 text-white">
               {/* Close button */}
@@ -245,6 +248,7 @@ export default function AdminOrgChartPage() {
               </button>
             </div>
           </div>
+          </>
         )}
       </div>
     </AdminLayout>

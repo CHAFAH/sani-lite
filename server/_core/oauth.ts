@@ -71,10 +71,44 @@ export function registerOAuthRoutes(app: Express) {
 
         const cookieOptions = getSessionCookieOptions(req);
         res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-        res.redirect(302, "/admin/dashboard");
+        const redirectTo = (req.query.redirect as string) || "/admin/dashboard";
+        res.redirect(302, redirectTo);
       } catch (error) {
         console.error("[DevLogin] Failed", error);
         res.status(500).json({ error: "Dev login failed" });
+      }
+    });
+
+    // Employee login bypass (Elena Volkov)
+    app.get("/api/employee-login", async (req: Request, res: Response) => {
+      const EMPLOYEE_OPEN_ID = "employee-elena-volkov";
+      try {
+        await db.upsertUser({
+          openId: EMPLOYEE_OPEN_ID,
+          name: "Forchu Chafah",
+          email: "forchu.cha@gmail.com",
+          role: "company_owner",
+          loginMethod: "google",
+          lastSignedIn: new Date(),
+        });
+
+        const user = await db.getUserByOpenId(EMPLOYEE_OPEN_ID);
+        if (user && !user.companyId) {
+          await db.setUserCompanyId(EMPLOYEE_OPEN_ID, 2);
+        }
+
+        const sessionToken = await sdk.createSessionToken(EMPLOYEE_OPEN_ID, {
+          name: "Forchu Chafah",
+          expiresInMs: ONE_YEAR_MS,
+        });
+
+        const cookieOptions = getSessionCookieOptions(req);
+        res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        const redirectTo = (req.query.redirect as string) || "/admin/dashboard";
+        res.redirect(302, redirectTo);
+      } catch (error) {
+        console.error("[EmployeeLogin] Failed", error);
+        res.status(500).json({ error: "Employee login failed" });
       }
     });
   }
