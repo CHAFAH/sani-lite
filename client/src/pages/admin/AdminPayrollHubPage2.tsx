@@ -655,7 +655,7 @@ export default function AdminPayrollHubPage() {
 
   return (
     <AdminLayout>
-      <div className="flex -mx-6 -mt-6" style={{ height: "calc(100vh - 64px)" }}>
+      <div className="flex -mx-6 -mt-6 h-[calc(100%+1.5rem+1.5rem)]">
         {/* Left Inner Navigation */}
         <div className="w-56 flex-shrink-0 border-r border-slate-100 bg-white p-4 space-y-1">
           <div className="mb-4">

@@ -211,6 +211,7 @@ export const appRouter = router({
         country: z.string().optional(), city: z.string().optional(), managerId: z.number().optional(),
         salary: z.string().optional(), currency: z.string().optional(),
         status: z.enum(["active", "inactive", "on_leave", "offboarded"]).optional(),
+        profilePictureUrl: z.string().optional(), coverPhotoUrl: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...updates } = input;

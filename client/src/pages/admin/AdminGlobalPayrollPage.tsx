@@ -6,6 +6,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import AdminLayout from "@/components/AdminLayout";
 import {
   Globe, Play, Clock, TrendingUp, Shield, CreditCard,
   ChevronRight, Search, Filter, Download, RefreshCw,
@@ -477,6 +478,7 @@ export default function AdminGlobalPayrollPage() {
   const [activeTab, setActiveTab] = useState<TabId>("runs");
 
   return (
+    <AdminLayout>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -510,5 +512,6 @@ export default function AdminGlobalPayrollPage() {
         </motion.div>
       </AnimatePresence>
     </div>
+    </AdminLayout>
   );
 }

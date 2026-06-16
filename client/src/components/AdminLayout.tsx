@@ -76,14 +76,7 @@ const navGroups: NavGroup[] = [
       { label: "Workflows", icon: Zap, href: "/admin/workflows" },
     ],
   },
-  {
-    label: "Settings",
-    items: [
-      { label: "RBAC & Roles", icon: Lock, href: "/admin/rbac" },
-      { label: "SSO Config", icon: Shield, href: "/admin/sso" },
-      { label: "Company", icon: Building2, href: "/admin/company-settings" },
-    ],
-  },
+
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -235,6 +228,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <HelpCircle size={18} />
             {!collapsed && <span className="text-sm font-medium">Help</span>}
           </button>
+          <Link href="/admin/settings">
+            <div
+              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 w-full cursor-pointer"
+              style={{ color: "rgba(255,255,255,0.5)" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.8)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}
+            >
+              <Settings size={18} />
+              {!collapsed && <span className="text-sm font-medium">Settings</span>}
+            </div>
+          </Link>
           <button
             onClick={() => logout()}
             className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 w-full"

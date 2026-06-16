@@ -111,6 +111,7 @@ export const employeeProfiles = mysqlTable("employee_profiles", {
   status: mysqlEnum("status", ["active", "inactive", "on_leave", "offboarded"]).default("active").notNull(),
   contractUrl: text("contractUrl"),
   profilePictureUrl: text("profilePictureUrl"),
+  coverPhotoUrl: text("coverPhotoUrl"),
   salary: decimal("salary", { precision: 12, scale: 2 }),
   currency: varchar("currency", { length: 3 }).default("USD"),
   country: varchar("country", { length: 100 }),

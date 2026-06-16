@@ -62,6 +62,7 @@ import AdminRbacPage from "./pages/admin/AdminRbacPage";
 import AdminTimeOffPage from "./pages/admin/AdminTimeOffPage";
 import AdminFinanceOSPage from "./pages/admin/AdminFinanceOSPage";
 import AdminCompanySettingsPage from "./pages/admin/AdminCompanySettingsPage";
+import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import EmployeeExpensesPage from "@/pages/employee/EmployeeExpensesPage";
 import AdminPayrollHubPage from "./pages/admin/AdminPayrollHubPage2";
 import AdminGlobalPayrollPage from "./pages/admin/AdminGlobalPayrollPage";
@@ -186,6 +187,7 @@ function Router() {
       <Route path="/admin/sso" component={AdminSsoPage} />
       <Route path="/admin/finance" component={AdminFinanceOSPage} />
       <Route path="/admin/company-settings" component={AdminCompanySettingsPage} />
+      <Route path="/admin/settings" component={AdminSettingsPage} />
       <Route path="/admin/invitations" component={AdminInvitationsPage} />
       <Route path="/admin/departments" component={AdminDepartmentsPage} />
 

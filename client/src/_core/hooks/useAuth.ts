@@ -38,9 +38,9 @@ export function useAuth(options?: UseAuthOptions) {
     } finally {
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
-      // Redirect to login page after logout
+      // Redirect to landing page after logout
       if (typeof window !== "undefined") {
-        window.location.href = getLoginUrl();
+        window.location.href = "/";
       }
     }
   }, [logoutMutation, utils]);
