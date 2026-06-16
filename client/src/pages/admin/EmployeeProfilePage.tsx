@@ -143,11 +143,12 @@ const getStatusBadge = (status: string | undefined) => {
   }
 };
 
-export default function EmployeeProfilePage() {
+export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { overrideEmployeeId?: number; Layout?: React.ComponentType<{ children: React.ReactNode }> } = {}) {
   const [, params] = useRoute("/admin/employees/:id");
   const [, setLocation] = useLocation();
-  const employeeId = params?.id ? parseInt(params.id) : null;
+  const employeeId = overrideEmployeeId || (params?.id ? parseInt(params.id) : null);
   const { user } = useAuth();
+  const WrapperLayout = Layout || AdminLayout;
 
   const [editingSection, setEditingSection] = useState<"personal" | "admin" | null>(null);
   const [activeTab, setActiveTab] = useState("performance");
@@ -286,7 +287,7 @@ export default function EmployeeProfilePage() {
 
   if (!employee) {
     return (
-      <AdminLayout>
+      <WrapperLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <AlertCircle size={48} className="mx-auto text-slate-300 mb-4" />
@@ -294,7 +295,7 @@ export default function EmployeeProfilePage() {
             <Button onClick={() => setLocation("/admin/employees")}>Back to Employees</Button>
           </div>
         </div>
-      </AdminLayout>
+      </WrapperLayout>
     );
   }
 
@@ -306,7 +307,7 @@ export default function EmployeeProfilePage() {
   const managerEmployee = emp.managerId ? employees.find((e: any) => e.id === emp.managerId) : null;
 
   return (
-    <AdminLayout>
+    <WrapperLayout>
       <div className="max-w-5xl mx-auto">
         <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "cover")} />
         <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "profile")} />
@@ -580,7 +581,11 @@ export default function EmployeeProfilePage() {
 
             {/* Personal */}
             <div ref={(el) => { sectionRefs.current["personal"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Personal" />
+              <SectionHeader title="Personal" action={
+                isOwnProfile && editingSection !== "personal" ? (
+                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
+                ) : null
+              } />
               <ViewRow label="Date of Birth" value={"\u2014"} />
               <ViewRow label="Gender" value={"\u2014"} />
               <ViewRow label="Pronouns" value={emp.metadata?.pronouns || "\u2014"} />
@@ -590,7 +595,11 @@ export default function EmployeeProfilePage() {
 
             {/* Contact Information */}
             <div ref={(el) => { sectionRefs.current["contact"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Contact Information" />
+              <SectionHeader title="Contact Information" action={
+                isOwnProfile && editingSection !== "personal" ? (
+                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
+                ) : null
+              } />
               <ViewRow label="Personal Email" value={"\u2014"} />
               <ViewRow label="Phone" value={emp.phone || "\u2014"} />
               <ViewRow label="Mobile" value={"\u2014"} />
@@ -598,7 +607,11 @@ export default function EmployeeProfilePage() {
 
             {/* Home */}
             <div ref={(el) => { sectionRefs.current["home"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Home Address" />
+              <SectionHeader title="Home Address" action={
+                isOwnProfile && editingSection !== "personal" ? (
+                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
+                ) : null
+              } />
               <ViewRow label="Street" value={"\u2014"} />
               <ViewRow label="City" value={emp.city || "\u2014"} />
               <ViewRow label="State/Region" value={"\u2014"} />
@@ -608,7 +621,11 @@ export default function EmployeeProfilePage() {
 
             {/* About */}
             <div ref={(el) => { sectionRefs.current["about"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="About" />
+              <SectionHeader title="About" action={
+                isOwnProfile && editingSection !== "personal" ? (
+                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
+                ) : null
+              } />
               <ViewRow label="Bio" value={"\u2014"} />
               <ViewRow label="Interests" value={"\u2014"} />
               <ViewRow label="Skills" value={"\u2014"} />
@@ -617,7 +634,11 @@ export default function EmployeeProfilePage() {
 
             {/* Emergency */}
             <div ref={(el) => { sectionRefs.current["emergency"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Emergency Contact" />
+              <SectionHeader title="Emergency Contact" action={
+                isOwnProfile && editingSection !== "personal" ? (
+                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
+                ) : null
+              } />
               <ViewRow label="Contact Name" value={"\u2014"} />
               <ViewRow label="Relationship" value={"\u2014"} />
               <ViewRow label="Phone" value={"\u2014"} />
@@ -643,6 +664,6 @@ export default function EmployeeProfilePage() {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </WrapperLayout>
   );
 }

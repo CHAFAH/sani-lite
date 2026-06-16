@@ -111,6 +111,62 @@ export function registerOAuthRoutes(app: Express) {
         res.status(500).json({ error: "Employee login failed" });
       }
     });
+
+    // Generic email login (dev only) — looks up user by email
+    app.post("/api/email-login", async (req: Request, res: Response) => {
+      try {
+        const { email } = req.body || {};
+        if (!email) { res.status(400).json({ error: "Email required" }); return; }
+        const user = await db.getUserByEmail(email);
+        if (!user) { res.status(404).json({ error: "No account found with this email" }); return; }
+        const sessionToken = await sdk.createSessionToken(user.openId, {
+          name: user.name || email,
+          expiresInMs: ONE_YEAR_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(req);
+        res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        const redirectPath = user.role === "employee" ? "/employee" : "/admin";
+        res.json({ success: true, redirect: redirectPath });
+      } catch (error) {
+        console.error("[EmailLogin] Failed", error);
+        res.status(500).json({ error: "Login failed" });
+      }
+    });
+
+    // Invite accept login
+    app.get("/api/invite-login", async (req: Request, res: Response) => {
+      const token = req.query.token as string;
+      if (!token) { res.status(400).json({ error: "Token required" }); return; }
+      try {
+        const invitation = await db.getInvitationByToken(token);
+        if (!invitation || invitation.status !== "pending") {
+          res.status(400).json({ error: "Invalid or expired invitation" }); return;
+        }
+        const openId = `invite-${invitation.email.replace(/[^a-z0-9]/gi, "-")}`;
+        await db.upsertUser({
+          openId,
+          name: invitation.email.split("@")[0],
+          email: invitation.email,
+          role: invitation.role || "employee",
+          loginMethod: "invite",
+          lastSignedIn: new Date(),
+        });
+        const user = await db.getUserByOpenId(openId);
+        if (user && !user.companyId) {
+          await db.setUserCompanyId(openId, invitation.companyId);
+        }
+        const sessionToken = await sdk.createSessionToken(openId, {
+          name: invitation.email.split("@")[0],
+          expiresInMs: ONE_YEAR_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(req);
+        res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        res.redirect(302, `/invite?token=${token}`);
+      } catch (error) {
+        console.error("[InviteLogin] Failed", error);
+        res.status(500).json({ error: "Login failed" });
+      }
+    });
   }
 
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {

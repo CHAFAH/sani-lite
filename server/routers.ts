@@ -870,6 +870,18 @@ export const appRouter = router({
       if (new Date() > invitation.expiresAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Invitation expired" });
       // Update user with company and role
       await upsertUser({ openId: ctx.user.openId, email: ctx.user.email, role: invitation.role, companyId: invitation.companyId });
+      await setUserCompanyId(ctx.user.openId, invitation.companyId);
+      // Create employee profile if it doesn't exist
+      const existingEmployees = await getEmployeesByCompanyId(invitation.companyId);
+      const hasProfile = existingEmployees.some((e: any) => e.email === invitation.email);
+      if (!hasProfile) {
+        const nameParts = (ctx.user.name || invitation.email.split("@")[0]).split(" ");
+        await createEmployeeProfile({
+          userId: ctx.user.id, companyId: invitation.companyId,
+          firstName: nameParts[0] || "New", lastName: nameParts.slice(1).join(" ") || "Employee",
+          email: invitation.email, employmentType: "full_time", status: "active",
+        });
+      }
       await updateInvitation(invitation.id, { status: "accepted" as any, acceptedAt: new Date() });
       return { success: true, companyId: invitation.companyId, role: invitation.role };
     }),

@@ -15,15 +15,15 @@ import { useAuth } from "@/_core/hooks/useAuth";
 interface NavItem { label: string; icon: React.ElementType; href: string; }
 
 const navItems: NavItem[] = [
-  { label: "My Dashboard", icon: LayoutDashboard, href: "/app" },
-  { label: "My Profile", icon: UserCircle, href: "/app/profile" },
-  { label: "Time Off", icon: CalendarDays, href: "/app/time-off" },
-  { label: "My Goals", icon: Target, href: "/app/goals" },
-  { label: "My Learning", icon: GraduationCap, href: "/app/learning" },
-  { label: "My Reviews", icon: Star, href: "/app/reviews" },
-  { label: "My Benefits", icon: Heart, href: "/app/benefits" },
-  { label: "Documents", icon: FileText, href: "/app/documents" },
-  { label: "Announcements", icon: Megaphone, href: "/app/announcements" },
+  { label: "My Dashboard", icon: LayoutDashboard, href: "/employee" },
+  { label: "My Profile", icon: UserCircle, href: "/employee/profile" },
+  { label: "Time Off", icon: CalendarDays, href: "/employee/time-off" },
+  { label: "My Goals", icon: Target, href: "/employee/goals" },
+  { label: "My Learning", icon: GraduationCap, href: "/employee/learning" },
+  { label: "My Reviews", icon: Star, href: "/employee/feedback" },
+  { label: "My Benefits", icon: Heart, href: "/employee/benefits" },
+  { label: "Payslips", icon: FileText, href: "/employee/payslips" },
+  { label: "Announcements", icon: Megaphone, href: "/employee/dashboard" },
 ];
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
@@ -34,7 +34,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     <div className="flex h-screen bg-[#FEFCF8] overflow-hidden">
       <aside className="w-[240px] flex flex-col border-r border-amber-100 bg-white" style={{ minWidth: 240 }}>
         <div className="flex items-center px-4 h-16 border-b border-amber-100">
-          <Link href="/app">
+          <Link href="/employee">
             <div className="flex items-center gap-2">
               <SaniLogo size={28} />
               <div className="flex flex-col">

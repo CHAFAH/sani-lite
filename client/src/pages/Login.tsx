@@ -10,18 +10,25 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleEmailLogin = (e: React.FormEvent) => {
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) { toast.error("Please enter email and password"); return; }
     setLoading(true);
-    // In production this would call a real auth endpoint
-    // For dev, redirect to dev-login if using dev email
-    if (email === "dev@sani.local" || email === "admin@sani.io") {
-      window.location.href = "/api/dev-login";
-    } else if (email === "forchu.cha@gmail.com") {
-      window.location.href = "/api/employee-login";
-    } else {
-      toast.error("Invalid credentials. Use Google or SSO to sign in.");
+    try {
+      const res = await fetch("/api/email-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.redirect) {
+        window.location.href = data.redirect;
+      } else {
+        toast.error(data.error || "Invalid credentials");
+        setLoading(false);
+      }
+    } catch {
+      toast.error("Login failed. Try again.");
       setLoading(false);
     }
   };

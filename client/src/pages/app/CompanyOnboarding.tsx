@@ -37,33 +37,9 @@ export default function CompanyOnboarding() {
   const { user, loading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Redirect to login if not authenticated
-  if (!loading && !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-white p-6">
-        <div className="text-center max-w-md">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Create your account first</h2>
-          <p className="text-sm text-slate-500 mb-6">You need to sign in or create an account before setting up your company.</p>
-          <div className="space-y-3">
-            <a href="/api/dev-login" className="block w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl text-center text-sm transition-all">Sign in with Google</a>
-            <a href="/login" className="block w-full py-3 px-4 border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-center text-sm transition-all">Back to Login</a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
-      </div>
-    );
-  }
-
   // Step 1: Company Info
   const [formData, setFormData] = useState({
-    name: "", industry: "", size: "", website: "", email: user?.email || "",
+    name: "", industry: "", size: "", website: "", email: "",
     phoneCode: "", phone: "", country: "",
     addressLine1: "", addressLine2: "", street: "", postalCode: "", city: "", region: "",
   });
@@ -225,6 +201,29 @@ export default function CompanyOnboarding() {
 
   const isLoading = createCompanyMut.isPending || updateCompanyMut.isPending || uploadLogoMut.isPending || createSubMut.isPending || completeOnboardingMut.isPending;
 
+  // Auth guards (after all hooks)
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-white p-6">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Create your account first</h2>
+          <p className="text-sm text-slate-500 mb-6">Sign in or create an account before setting up your company.</p>
+          <div className="space-y-3">
+            <a href="/api/dev-login?redirect=/signup" className="block w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl text-center text-sm transition-all">Sign in with Google</a>
+            <a href="/login" className="block w-full py-3 px-4 border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-center text-sm transition-all">Back to Login</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FEFCF8] to-[#F0F9FF] p-4 md:p-8">

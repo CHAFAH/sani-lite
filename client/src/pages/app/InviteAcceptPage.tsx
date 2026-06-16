@@ -39,9 +39,8 @@ export default function InviteAcceptPage() {
   };
 
   const handleLogin = () => {
-    // Store the invite token in sessionStorage so we can redirect back after login
     sessionStorage.setItem("pendingInviteToken", token);
-    window.location.href = getLoginUrl(`/invite?token=${token}`);
+    window.location.href = `/api/invite-login?token=${token}`;
   };
 
   // Auto-accept if user just logged in and has a pending invite
