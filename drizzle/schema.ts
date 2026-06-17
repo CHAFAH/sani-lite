@@ -117,6 +117,13 @@ export const employeeProfiles = mysqlTable("employee_profiles", {
   country: varchar("country", { length: 100 }),
   city: varchar("city", { length: 100 }),
   metadata: json("metadata"),
+  cprNumber: varchar("cprNumber", { length: 20 }),
+  bankAccount: varchar("bankAccount", { length: 50 }),
+  personalEmail: varchar("personalEmail", { length: 320 }),
+  emergencyContactName: varchar("emergencyContactName", { length: 200 }),
+  emergencyContactPhone: varchar("emergencyContactPhone", { length: 30 }),
+  emergencyContactEmail: varchar("emergencyContactEmail", { length: 320 }),
+  emergencyContactRelation: varchar("emergencyContactRelation", { length: 50 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
