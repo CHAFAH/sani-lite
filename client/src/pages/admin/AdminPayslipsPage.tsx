@@ -38,6 +38,7 @@ export default function AdminPayslipsPage() {
   const [month, setMonth] = useState(String(new Date().getMonth() + 1));
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [expandedPayslip, setExpandedPayslip] = useState<number | null>(null);
+  const [viewingPayslip, setViewingPayslip] = useState<any>(null);
 
   // Payslip calculation state
   const [grossSalary, setGrossSalary] = useState("");
@@ -167,7 +168,12 @@ export default function AdminPayslipsPage() {
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Year</label>
-                  <Input value={year} onChange={(e) => setYear(e.target.value)} />
+                  <Select value={year} onValueChange={setYear}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[2024, 2025, 2026, 2027, 2028].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -272,6 +278,7 @@ export default function AdminPayslipsPage() {
                         <Badge className={p.status === "sent" ? "bg-emerald-100 text-emerald-700" : p.status === "validated" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}>{p.status}</Badge>
                       </td>
                       <td className="py-3 px-4 text-right space-x-2">
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setViewingPayslip(p); }} className="text-slate-600"><FileText size={14} className="mr-1" />View</Button>
                         {p.status === "draft" && <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); validateMut.mutate({ id: p.id }); }}><Check size={14} className="mr-1" />Validate</Button>}
                         {p.status === "validated" && <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white" onClick={(e) => { e.stopPropagation(); sendMut.mutate({ id: p.id }); }}><Send size={14} className="mr-1" />Send</Button>}
                         {p.status === "sent" && <span className="text-xs text-slate-400">Delivered</span>}
@@ -303,6 +310,108 @@ export default function AdminPayslipsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* ══ FULL PAYSLIP DOCUMENT VIEW ══ */}
+        {viewingPayslip && (() => {
+          const p = viewingPayslip;
+          const empData = employees.find((e: any) => e.id === p.employeeId) as any;
+          const gross = Number(p.grossSalary);
+          const net = Number(p.netPay);
+          const am = Number(p.amContribution);
+          const tax = Number(p.aTax);
+          const pen = Number(p.pension);
+          const atpVal = Number(p.atp);
+          const hours = Number(p.hoursWorked) || 160.33;
+          const rate = Number(p.hourlyRate) || (gross / hours);
+          return (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center overflow-y-auto py-8">
+              <div className="bg-white w-full max-w-[700px] rounded-xl shadow-2xl mx-4">
+                {/* Toolbar */}
+                <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 sticky top-0 bg-white rounded-t-xl z-10">
+                  <h3 className="font-bold text-slate-900">Payslip — {MONTHS[p.month - 1]} {p.year}</h3>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.print()}>Download PDF</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setViewingPayslip(null)}><X size={16} /></Button>
+                  </div>
+                </div>
+
+                {/* Document */}
+                <div className="p-8 text-sm font-mono" id="payslip-doc">
+                  {/* Company + Employee Header */}
+                  <div className="flex justify-between mb-6">
+                    <div>
+                      <p className="font-bold text-base">{company?.name || "Company"}</p>
+                      <p className="text-slate-500">{company?.address || "—"}</p>
+                      <p className="text-slate-500">CVR no.: {company?.website?.includes("hilltop") ? "42891057" : "36909587"}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">{empData?.firstName} {empData?.lastName}</p>
+                      <p className="text-slate-500">CPR: {empData?.metadata?.cprNumber || empData?.cprNumber || "—"}</p>
+                      <p className="text-slate-500">Emp ID: EMP-{empData?.id}</p>
+                    </div>
+                  </div>
+
+                  {/* Meta Info */}
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-1 mb-6 text-xs border border-slate-200 rounded-lg p-4 bg-slate-50">
+                    <div className="flex justify-between"><span className="text-slate-500">Department</span><span className="font-medium">{empData?.department || "—"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Employment date</span><span className="font-medium">{empData?.startDate ? new Date(empData.startDate).toLocaleDateString("en-GB") : "—"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Salary period</span><span className="font-medium">{new Date(p.salaryPeriodStart).toLocaleDateString("en-GB")} - {new Date(p.salaryPeriodEnd).toLocaleDateString("en-GB")}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Availability date</span><span className="font-medium">{new Date(p.salaryPeriodEnd).toLocaleDateString("en-GB")}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Account</span><span className="font-medium">{p.bankAccount || empData?.metadata?.bankAccount || "—"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Currency</span><span className="font-medium">{p.currency}</span></div>
+                  </div>
+
+                  {/* Payslip Table */}
+                  <table className="w-full text-xs border border-slate-200 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-slate-800 text-white">
+                        <th className="text-left py-2 px-3">Text</th>
+                        <th className="text-right py-2 px-3 w-20">Basis</th>
+                        <th className="text-right py-2 px-3 w-16">Rate</th>
+                        <th className="text-right py-2 px-3 w-24">Paid out</th>
+                        <th className="text-right py-2 px-3 w-24">Deducted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-slate-100"><td className="py-2 px-3">Salary</td><td className="text-right px-3">{hours.toFixed(2)}</td><td className="text-right px-3">{rate.toFixed(2)}</td><td className="text-right px-3 text-emerald-700">{gross.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td><td></td></tr>
+                      <tr className="border-b border-slate-100"><td className="py-2 px-3">ATP of salary</td><td className="text-right px-3">{hours.toFixed(2)}</td><td></td><td></td><td className="text-right px-3 text-red-600">{atpVal.toFixed(2)}</td></tr>
+                      <tr className="border-b border-slate-100"><td className="py-2 px-3">Pension - Employee ({((pen/gross)*100).toFixed(0)}%)</td><td className="text-right px-3">{gross.toLocaleString("da-DK")}</td><td className="text-right px-3">{((pen/gross)*100).toFixed(0)}%</td><td></td><td className="text-right px-3 text-red-600">{pen.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
+                      <tr className="border-b border-slate-100"><td className="py-2 px-3">AM income base</td><td></td><td></td><td className="text-right px-3">{(gross - pen).toLocaleString("da-DK", {minimumFractionDigits: 2})}</td><td></td></tr>
+                      <tr className="border-b border-slate-100"><td className="py-2 px-3">AM contribution</td><td className="text-right px-3">{(gross-pen).toLocaleString("da-DK")}</td><td className="text-right px-3">8%</td><td></td><td className="text-right px-3 text-red-600">{am.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
+                      <tr className="border-b border-slate-100"><td className="py-2 px-3">A-tax</td><td className="text-right px-3">{(gross-pen-am).toLocaleString("da-DK")}</td><td className="text-right px-3">38%</td><td></td><td className="text-right px-3 text-red-600">{tax.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
+                      {Number(p.otherDeductions) > 0 && <tr className="border-b border-slate-100"><td className="py-2 px-3">Other deductions</td><td></td><td></td><td></td><td className="text-right px-3 text-red-600">{Number(p.otherDeductions).toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-teal-50 border-t-2 border-teal-300">
+                        <td className="py-3 px-3 font-bold text-teal-800 text-sm" colSpan={3}>Net pay</td>
+                        <td className="text-right px-3 font-bold text-lg text-teal-700" colSpan={2}>{net.toLocaleString("da-DK", {minimumFractionDigits: 2})} {p.currency}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+
+                  {/* Balance / Year-to-date */}
+                  <div className="mt-6 border border-slate-200 rounded-lg p-4 bg-slate-50">
+                    <h4 className="text-xs font-bold text-slate-600 uppercase mb-2">Balance</h4>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div></div><div className="text-right font-bold text-slate-500">Period</div><div className="text-right font-bold text-slate-500">Year to date</div>
+                      <div className="text-slate-600">AM income base</div><div className="text-right">{(gross-pen).toLocaleString("da-DK")}</div><div className="text-right">{((gross-pen)*p.month).toLocaleString("da-DK")}</div>
+                      <div className="text-slate-600">A-tax</div><div className="text-right">{tax.toLocaleString("da-DK")}</div><div className="text-right">{(tax*p.month).toLocaleString("da-DK")}</div>
+                      <div className="text-slate-600">AM contribution</div><div className="text-right">{am.toLocaleString("da-DK")}</div><div className="text-right">{(am*p.month).toLocaleString("da-DK")}</div>
+                      <div className="text-slate-600">ATP</div><div className="text-right">{atpVal.toFixed(2)}</div><div className="text-right">{(atpVal*p.month).toFixed(2)}</div>
+                      <div className="text-slate-600">Pension (employee)</div><div className="text-right">{pen.toLocaleString("da-DK")}</div><div className="text-right">{(pen*p.month).toLocaleString("da-DK")}</div>
+                      <div className="text-slate-600">Hours</div><div className="text-right">{hours.toFixed(2)}</div><div className="text-right">{(hours*p.month).toFixed(2)}</div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="mt-6 text-center text-[10px] text-slate-400">
+                    <p>Generated by SANI · {company?.name} · {new Date().toLocaleDateString("en-GB")}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </AdminLayout>
   );
