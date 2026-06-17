@@ -161,6 +161,7 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
 
   const utils = trpc.useUtils();
   const { data: employees = [] } = trpc.employee.list.useQuery();
+  const { data: company } = trpc.company.get.useQuery(undefined, { retry: false });
   const employee = employees.find((e: any) => e.id === employeeId);
   const emp = employee as any;
 
@@ -187,7 +188,7 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
   // Admin form (admin-editable)
   const [adminForm, setAdminForm] = useState({
     firstName: "", lastName: "", position: "", department: "",
-    employmentType: "full_time", salary: "", currency: "USD",
+    employmentType: "full_time", salary: "", currency: "",
     status: "active", managerId: "",
   });
 
@@ -203,7 +204,7 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
         firstName: emp.firstName || "", lastName: emp.lastName || "",
         position: emp.position || "", department: emp.department || "",
         employmentType: emp.employmentType || "full_time",
-        salary: emp.salary ? String(emp.salary) : "", currency: emp.currency || "USD",
+        salary: emp.salary ? String(emp.salary) : "", currency: emp.currency || (company?.country === "DK" ? "DKK" : company?.country === "US" ? "USD" : company?.country === "GB" ? "GBP" : company?.country === "DE" ? "EUR" : "USD"),
         status: emp.status || "active", managerId: emp.managerId ? String(emp.managerId) : "",
       });
     }
@@ -376,13 +377,20 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
                 </p>
               </div>
 
+              {isOwnProfile && editingSection !== "personal" && (
+                <Button variant="outline" size="sm" onClick={() => setEditingSection("personal")} className="gap-1.5">
+                  <Pencil size={14} /> Edit Profile
+                </Button>
+              )}
+              {editingSection === "personal" && (
+                <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)} className="text-slate-500">Cancel</Button>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm"><MoreVertical size={16} /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {isAdmin && <DropdownMenuItem onClick={() => setEditingSection("admin")}><Edit size={14} className="mr-2" />Edit Job Info</DropdownMenuItem>}
-                  {isOwnProfile && <DropdownMenuItem onClick={() => setEditingSection("personal")}><Pencil size={14} className="mr-2" />Edit Personal Info</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                   {isAdmin && <DropdownMenuItem><Shield size={14} className="mr-2" />Change Role</DropdownMenuItem>}
                   {isAdmin && <DropdownMenuItem><Users2 size={14} className="mr-2" />Assign Manager</DropdownMenuItem>}
@@ -463,10 +471,10 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
 
           {/* Right Content Area - All sections stacked */}
           <div className="flex-1 min-w-0 space-y-5" ref={contentRef}>
-            {/* Save/Cancel Bar */}
-            {editingSection && (
+            {/* Save/Cancel Bar (admin only) */}
+            {editingSection === "admin" && (
               <div className="flex gap-2 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <Button size="sm" onClick={editingSection === "personal" ? handleSavePersonal : handleSaveAdmin} disabled={updateMut.isPending}>
+                <Button size="sm" onClick={handleSaveAdmin} disabled={updateMut.isPending}>
                   {updateMut.isPending ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Save size={14} className="mr-2" />}Save
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setEditingSection(null)}><X size={14} className="mr-2" />Cancel</Button>
@@ -475,11 +483,7 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
 
             {/* Basic Info */}
             <div ref={(el) => { sectionRefs.current["basic"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Basic Information" action={
-                isOwnProfile && editingSection !== "personal" ? (
-                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
-                ) : null
-              } />
+              <SectionHeader title="Basic Information" />
               {editingSection === "personal" ? (
                 <>
                   <EditInputRow label="Phone" value={personalForm.phone} onChange={(v) => setPersonalForm(p => ({ ...p, phone: v }))} placeholder="+1 234 567 890" />
@@ -581,72 +585,117 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
 
             {/* Personal */}
             <div ref={(el) => { sectionRefs.current["personal"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Personal" action={
-                isOwnProfile && editingSection !== "personal" ? (
-                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
-                ) : null
-              } />
-              <ViewRow label="Date of Birth" value={"\u2014"} />
-              <ViewRow label="Gender" value={"\u2014"} />
-              <ViewRow label="Pronouns" value={emp.metadata?.pronouns || "\u2014"} />
-              <ViewRow label="Nationality" value={emp.country || "\u2014"} />
-              <ViewRow label="Marital Status" value={"\u2014"} />
+            {/* Personal */}
+            <div ref={(el) => { sectionRefs.current["personal"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
+              <SectionHeader title="Personal" />
+              {editingSection === "personal" ? (
+                <>
+                  <EditInputRow label="Date of Birth" value={personalForm.phone} onChange={(v) => setPersonalForm(p => ({ ...p, phone: v }))} placeholder="DD/MM/YYYY" />
+                  <EditSelectRow label="Gender" value={personalForm.city} onChange={(v) => setPersonalForm(p => ({ ...p, city: v }))} options={[{value:"male",label:"Male"},{value:"female",label:"Female"},{value:"non-binary",label:"Non-binary"},{value:"prefer-not",label:"Prefer not to say"}]} placeholder="Select gender" />
+                  <EditSelectRow label="Pronouns" value={personalForm.pronouns} onChange={(v) => setPersonalForm(p => ({ ...p, pronouns: v }))} options={[{value:"He / Him",label:"He / Him"},{value:"She / Her",label:"She / Her"},{value:"They / Them",label:"They / Them"},{value:"Other",label:"Other"}]} placeholder="Select pronouns" />
+                  <EditSelectRow label="Nationality" value={personalForm.country} onChange={(v) => setPersonalForm(p => ({ ...p, country: v }))} options={countryOptions} placeholder="Select nationality" />
+                  <EditSelectRow label="Marital Status" value="" onChange={() => {}} options={[{value:"single",label:"Single"},{value:"married",label:"Married"},{value:"divorced",label:"Divorced"},{value:"widowed",label:"Widowed"},{value:"domestic-partner",label:"Domestic Partner"}]} placeholder="Select status" />
+                </>
+              ) : (
+                <>
+                  <ViewRow label="Date of Birth" value={"\u2014"} />
+                  <ViewRow label="Gender" value={"\u2014"} />
+                  <ViewRow label="Pronouns" value={emp.metadata?.pronouns || "\u2014"} />
+                  <ViewRow label="Nationality" value={emp.country || "\u2014"} />
+                  <ViewRow label="Marital Status" value={"\u2014"} />
+                </>
+              )}
             </div>
 
             {/* Contact Information */}
             <div ref={(el) => { sectionRefs.current["contact"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Contact Information" action={
-                isOwnProfile && editingSection !== "personal" ? (
-                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
-                ) : null
-              } />
-              <ViewRow label="Personal Email" value={"\u2014"} />
-              <ViewRow label="Phone" value={emp.phone || "\u2014"} />
-              <ViewRow label="Mobile" value={"\u2014"} />
+              <SectionHeader title="Contact Information" />
+              {editingSection === "personal" ? (
+                <>
+                  <EditInputRow label="Personal Email" value="" onChange={() => {}} placeholder="personal@email.com" />
+                  <EditInputRow label="Phone" value={personalForm.phone} onChange={(v) => setPersonalForm(p => ({ ...p, phone: v }))} placeholder="+45 12345678" />
+                  <EditInputRow label="Mobile" value="" onChange={() => {}} placeholder="+45 ..." />
+                </>
+              ) : (
+                <>
+                  <ViewRow label="Personal Email" value={"\u2014"} />
+                  <ViewRow label="Phone" value={emp.phone || "\u2014"} />
+                  <ViewRow label="Mobile" value={"\u2014"} />
+                </>
+              )}
             </div>
 
             {/* Home */}
             <div ref={(el) => { sectionRefs.current["home"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Home Address" action={
-                isOwnProfile && editingSection !== "personal" ? (
-                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
-                ) : null
-              } />
-              <ViewRow label="Street" value={"\u2014"} />
-              <ViewRow label="City" value={emp.city || "\u2014"} />
-              <ViewRow label="State/Region" value={"\u2014"} />
-              <ViewRow label="Postal Code" value={"\u2014"} />
-              <ViewRow label="Country" value={emp.country || "\u2014"} />
+              <SectionHeader title="Home Address" />
+              {editingSection === "personal" ? (
+                <>
+                  <EditInputRow label="Street" value="" onChange={() => {}} placeholder="123 Main Street" />
+                  <EditInputRow label="City" value={personalForm.city} onChange={(v) => setPersonalForm(p => ({ ...p, city: v }))} />
+                  <EditInputRow label="State/Region" value="" onChange={() => {}} placeholder="Capital Region" />
+                  <EditInputRow label="Postal Code" value="" onChange={() => {}} placeholder="2100" />
+                  <EditSelectRow label="Country" value={personalForm.country} onChange={(v) => setPersonalForm(p => ({ ...p, country: v }))} options={countryOptions} placeholder="Select country" />
+                </>
+              ) : (
+                <>
+                  <ViewRow label="Street" value={"\u2014"} />
+                  <ViewRow label="City" value={emp.city || "\u2014"} />
+                  <ViewRow label="State/Region" value={"\u2014"} />
+                  <ViewRow label="Postal Code" value={"\u2014"} />
+                  <ViewRow label="Country" value={emp.country || "\u2014"} />
+                </>
+              )}
             </div>
 
             {/* About */}
             <div ref={(el) => { sectionRefs.current["about"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="About" action={
-                isOwnProfile && editingSection !== "personal" ? (
-                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
-                ) : null
-              } />
-              <ViewRow label="Bio" value={"\u2014"} />
-              <ViewRow label="Interests" value={"\u2014"} />
-              <ViewRow label="Skills" value={"\u2014"} />
-              <ViewRow label="Languages" value={"\u2014"} />
+              <SectionHeader title="About" />
+              {editingSection === "personal" ? (
+                <>
+                  <EditInputRow label="Bio" value="" onChange={() => {}} placeholder="Tell us about yourself..." />
+                  <EditInputRow label="Interests" value="" onChange={() => {}} placeholder="Reading, Sports..." />
+                  <EditInputRow label="Skills" value="" onChange={() => {}} placeholder="JavaScript, Python..." />
+                  <EditInputRow label="Languages" value="" onChange={() => {}} placeholder="English, Danish..." />
+                </>
+              ) : (
+                <>
+                  <ViewRow label="Bio" value={"\u2014"} />
+                  <ViewRow label="Interests" value={"\u2014"} />
+                  <ViewRow label="Skills" value={"\u2014"} />
+                  <ViewRow label="Languages" value={"\u2014"} />
+                </>
+              )}
             </div>
 
             {/* Emergency */}
             <div ref={(el) => { sectionRefs.current["emergency"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <SectionHeader title="Emergency Contact" action={
-                isOwnProfile && editingSection !== "personal" ? (
-                  <button onClick={() => setEditingSection("personal")} className="text-xs text-teal-600 font-medium hover:underline flex items-center gap-1"><Pencil size={11} /> Edit</button>
-                ) : null
-              } />
-              <ViewRow label="Contact Name" value={"\u2014"} />
-              <ViewRow label="Relationship" value={"\u2014"} />
-              <ViewRow label="Phone" value={"\u2014"} />
-              <ViewRow label="Email" value={"\u2014"} />
+              <SectionHeader title="Emergency Contact" />
+              {editingSection === "personal" ? (
+                <>
+                  <EditInputRow label="Contact Name" value="" onChange={() => {}} placeholder="Full name" />
+                  <EditSelectRow label="Relationship" value="" onChange={() => {}} options={[{value:"spouse",label:"Spouse"},{value:"parent",label:"Parent"},{value:"sibling",label:"Sibling"},{value:"child",label:"Child"},{value:"friend",label:"Friend"},{value:"other",label:"Other"}]} placeholder="Select relationship" />
+                  <EditInputRow label="Phone" value="" onChange={() => {}} placeholder="+45 ..." />
+                  <EditInputRow label="Email" value="" onChange={() => {}} placeholder="email@example.com" />
+                </>
+              ) : (
+                <>
+                  <ViewRow label="Contact Name" value={"\u2014"} />
+                  <ViewRow label="Relationship" value={"\u2014"} />
+                  <ViewRow label="Phone" value={"\u2014"} />
+                  <ViewRow label="Email" value={"\u2014"} />
+                </>
+              )}
             </div>
 
-            {/* Assets */}
-            <div ref={(el) => { sectionRefs.current["assets"] = el; }} className="scroll-mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
+            {/* Single Save button at the bottom */}
+            {editingSection === "personal" && (
+              <div className="flex justify-center py-5">
+                <Button onClick={() => { handleSavePersonal(); }} disabled={updateMut.isPending} className="bg-teal-600 hover:bg-teal-700 text-white px-10 py-2.5 text-sm">
+                  {updateMut.isPending ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Save size={14} className="mr-2" />} Save Changes
+                </Button>
+              </div>
+            )}
+
               <SectionHeader title="Assets" adminOnly />
               <ViewRow label="Laptop" value={"\u2014"} />
               <ViewRow label="Phone" value={"\u2014"} />

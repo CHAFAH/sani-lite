@@ -66,8 +66,19 @@ function Hero() {
           >
             The Employee OS <span className="italic text-teal-600">Built for</span> Modern Teams
           </motion.h1>
-          <motion.p variants={fadeUp} className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-            Replace HR, payroll, IT, and finance tools with one unified platform. Powered by AI. Built for global teams. Loved by people ops.
+          <motion.p variants={fadeUp} className="text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed px-4">
+            <span className="text-slate-600">Replace </span>
+            <span className="font-semibold text-slate-800">HR</span>
+            <span className="text-slate-600">, </span>
+            <span className="font-semibold text-slate-800">payroll</span>
+            <span className="text-slate-600">, </span>
+            <span className="font-semibold text-slate-800">IT</span>
+            <span className="text-slate-600">, and </span>
+            <span className="font-semibold text-slate-800">finance</span>
+            <span className="text-slate-600"> tools with one unified platform. </span>
+            <span className="italic text-teal-600">Powered by AI.</span>
+            <span className="text-slate-600"> Built for global teams. </span>
+            <span className="font-medium text-amber-600">Loved by people ops.</span>
           </motion.p>
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/login">
@@ -145,18 +156,18 @@ function Features() {
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-sm font-medium mb-4">
             Platform
           </motion.div>
-          <motion.h2 variants={fadeUp} className="text-5xl sm:text-6xl font-normal tracking-tight mb-6 font-serif">
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-5xl lg:text-6xl font-normal tracking-tight mb-6 font-serif px-4">
             Everything you need, <span className="italic text-teal-600">nothing you don't</span>
           </motion.h2>
         </AnimatedSection>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto px-4">
           {features.map((f) => (
             <AnimatedSection key={f.num}>
-              <motion.div variants={fadeUp} className="bg-white rounded-2xl p-8 border border-border/50 shadow-sm hover:shadow-md transition-shadow">
-                <div className="text-4xl font-bold text-teal-600 mb-4 font-sans">{f.num}</div>
-                <h3 className="text-xl font-semibold mb-3 font-sans">{f.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{f.desc}</p>
+              <motion.div variants={fadeUp} className="bg-white rounded-2xl p-6 sm:p-8 border border-border/50 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 text-center group">
+                <div className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-teal-500 to-cyan-600 mb-3 font-mono tracking-tighter">{f.num}</div>
+                <h3 className="text-lg sm:text-xl font-bold mb-2 font-serif italic text-slate-800 group-hover:text-teal-700 transition-colors">{f.title}</h3>
+                <p className="text-sm sm:text-[15px] text-slate-500 leading-relaxed font-light">{f.desc}</p>
               </motion.div>
             </AnimatedSection>
           ))}

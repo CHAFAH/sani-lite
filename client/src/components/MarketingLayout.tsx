@@ -184,11 +184,11 @@ function MegaDropdown({ menu, onClose }: { menu: MegaMenu; onClose: () => void }
       transition={{ duration: 0.2, ease: "easeOut" }}
       className="absolute top-full left-0 right-0 bg-white border-b border-border shadow-xl shadow-black/5"
     >
-      <div className="container py-8">
-        <div className={`grid gap-8 ${menu.featured ? "grid-cols-[1fr_1fr_1fr_280px]" : `grid-cols-${menu.columns.length}`}`}>
+      <div className="container py-6">
+        <div className="flex gap-6 max-w-4xl mx-auto">
           {menu.columns.map((col) => (
-            <div key={col.title}>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-teal-600 mb-4 font-sans">
+            <div key={col.title} className="flex-1 min-w-0">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-teal-600 mb-3 px-3">
                 {col.title}
               </h4>
               <div className="space-y-0.5">
@@ -196,9 +196,9 @@ function MegaDropdown({ menu, onClose }: { menu: MegaMenu; onClose: () => void }
                   <Link key={item.label} href={item.href}>
                     <div
                       onClick={onClose}
-                      className="block px-3 py-2 rounded-lg hover:bg-cream-dark transition-colors"
+                      className="block px-3 py-2 rounded-lg hover:bg-teal-50 transition-colors"
                     >
-                      <span className="text-sm font-medium text-foreground">{item.label}</span>
+                      <span className="text-sm font-medium text-slate-700 hover:text-teal-700">{item.label}</span>
                     </div>
                   </Link>
                 ))}
@@ -207,19 +207,19 @@ function MegaDropdown({ menu, onClose }: { menu: MegaMenu; onClose: () => void }
           ))}
 
           {menu.featured && (
-            <div className="bg-teal-50/50 rounded-2xl p-6 border border-teal-100">
-              <p className="text-sm font-semibold text-foreground leading-snug mb-2">
+            <div className="w-[240px] flex-shrink-0 bg-teal-50/60 rounded-xl p-5 border border-teal-100">
+              <p className="text-sm font-semibold text-slate-800 leading-snug mb-2">
                 {menu.featured.title}
               </p>
-              <p className="text-xs text-muted-foreground mb-4">
+              <p className="text-xs text-slate-500 mb-3">
                 {menu.featured.description}
               </p>
               <Link href={menu.featured.href}>
                 <span
                   onClick={onClose}
-                  className="text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors uppercase tracking-wide"
+                  className="text-xs font-bold text-teal-600 hover:text-teal-700 uppercase tracking-wide"
                 >
-                  {menu.featured.linkText}
+                  {menu.featured.linkText} →
                 </span>
               </Link>
             </div>
@@ -382,7 +382,7 @@ function MobileAccordion({ item, onNavigate }: { item: NavItem; onNavigate: () =
     <div>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full text-sm font-medium py-3 px-3 rounded-lg hover:bg-cream-dark transition-colors"
+        className="flex items-center justify-between w-full text-sm font-medium py-3 px-3 rounded-lg hover:bg-slate-50 transition-colors"
       >
         {item.label}
         <span className={`text-xs transition-transform inline-block ${open ? "rotate-180" : ""}`}>▾</span>
@@ -395,22 +395,24 @@ function MobileAccordion({ item, onNavigate }: { item: NavItem; onNavigate: () =
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="pl-4 pb-2 space-y-4">
+            <div className="pl-3 pb-3 space-y-3">
               {item.mega.columns.map((col) => (
                 <div key={col.title}>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-teal-600 mb-2 px-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-teal-600 mb-1.5 px-3">
                     {col.title}
                   </p>
-                  {col.items.map((link) => (
-                    <Link key={link.label} href={link.href}>
-                      <span
-                        onClick={onNavigate}
-                        className="block text-sm py-2 px-3 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {link.label}
-                      </span>
-                    </Link>
-                  ))}
+                  <div className="space-y-0.5">
+                    {col.items.map((link) => (
+                      <Link key={link.label} href={link.href}>
+                        <span
+                          onClick={onNavigate}
+                          className="block text-sm py-1.5 px-3 text-slate-600 hover:text-teal-700 hover:bg-teal-50 rounded-md transition-colors"
+                        >
+                          {link.label}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

@@ -3,11 +3,12 @@
  * Accessible to: employee role
  */
 
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, CalendarDays, Star, Target, GraduationCap,
-  Bell, Search, UserCircle, Heart, FileText, Megaphone, LogOut,
+  Bell, Search, UserCircle, Heart, FileText, Megaphone, LogOut, CreditCard,
 } from "lucide-react";
 import { SaniLogo } from "@/components/MarketingLayout";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -23,16 +24,23 @@ const navItems: NavItem[] = [
   { label: "My Reviews", icon: Star, href: "/employee/feedback" },
   { label: "My Benefits", icon: Heart, href: "/employee/benefits" },
   { label: "Payslips", icon: FileText, href: "/employee/payslips" },
+  { label: "Expenses", icon: CreditCard, href: "/employee/expenses" },
   { label: "Announcements", icon: Megaphone, href: "/employee/dashboard" },
 ];
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="flex h-screen bg-[#FEFCF8] overflow-hidden">
-      <aside className="w-[240px] flex flex-col border-r border-amber-100 bg-white" style={{ minWidth: 240 }}>
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
+      <aside className={`w-[240px] flex flex-col border-r border-amber-100 bg-white z-50 fixed lg:relative inset-y-0 left-0 transition-transform lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`} style={{ minWidth: 240 }}>
         <div className="flex items-center px-4 h-16 border-b border-amber-100">
           <Link href="/employee">
             <div className="flex items-center gap-2">
@@ -49,7 +57,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           {navItems.map((item) => {
             const isActive = location === item.href || (item.href === "/app" && location === "/app/dashboard");
             return (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
                 <motion.div
                   whileHover={{ x: 2 }}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative ${
@@ -85,10 +93,13 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 border-b border-amber-100 bg-white flex items-center justify-between px-6">
+        <header className="h-14 border-b border-amber-100 bg-white flex items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-3 flex-1 max-w-md">
+            <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-lg hover:bg-slate-100">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-600"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
+            </button>
             <Search size={18} className="text-slate-400" />
-            <input type="text" placeholder="Search..." className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
+            <input type="text" placeholder="Search..." className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 hidden sm:block" />
           </div>
           <div className="flex items-center gap-3">
             <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors">
