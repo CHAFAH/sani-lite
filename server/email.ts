@@ -293,3 +293,45 @@ export async function sendWelcomeEmail(
     return { success: false, error: err.message || "Unknown error" };
   }
 }
+
+
+const MONTHS_NAME = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+export async function sendPayslipEmail({ recipientEmail, employeeName, companyName, month, year, netPay, currency }: {
+  recipientEmail: string; employeeName: string; companyName: string; month: number; year: number; netPay: string; currency: string;
+}) {
+  try {
+    const resend = getResendClient();
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: recipientEmail,
+      subject: `Your payslip for ${MONTHS_NAME[month - 1]} ${year} is ready — ${companyName}`,
+      html: `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;padding:40px 20px">
+          <div style="background:linear-gradient(135deg,#0D9488,#0891B2);border-radius:12px;padding:28px;color:white;text-align:center;margin-bottom:20px">
+            <h1 style="margin:0 0 6px;font-size:20px">Payslip Ready</h1>
+            <p style="margin:0;opacity:0.9;font-size:13px">${MONTHS_NAME[month - 1]} ${year}</p>
+          </div>
+          <div style="background:#f8fafc;border-radius:10px;padding:20px;margin-bottom:20px">
+            <p style="color:#334155;font-size:14px;margin:0 0 12px">Hi ${employeeName.split(" ")[0]},</p>
+            <p style="color:#334155;font-size:14px;margin:0 0 12px">Your payslip for <strong>${MONTHS_NAME[month - 1]} ${year}</strong> has been processed by <strong>${companyName}</strong>.</p>
+            <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:16px;text-align:center;margin:16px 0">
+              <p style="color:#64748b;font-size:12px;margin:0 0 4px">Net Pay</p>
+              <p style="color:#0D9488;font-size:24px;font-weight:bold;margin:0">${currency} ${Number(netPay).toLocaleString()}</p>
+            </div>
+            <p style="color:#64748b;font-size:13px;margin:0">Log in to your SANI account to view the full breakdown and download the PDF.</p>
+          </div>
+          <div style="text-align:center">
+            <a href="http://localhost:3000/employee/payslips" style="display:inline-block;background:#0D9488;color:white;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px">View Payslip →</a>
+          </div>
+          <p style="text-align:center;color:#94a3b8;font-size:11px;margin-top:24px">${companyName} · Powered by SANI</p>
+        </div>
+      `,
+    });
+    console.log(`[Email] Payslip email sent to ${recipientEmail}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error("[Email] Payslip email failed:", err?.message || err);
+    return { success: false, error: err?.message };
+  }
+}

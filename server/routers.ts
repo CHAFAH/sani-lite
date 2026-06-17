@@ -946,7 +946,27 @@ export const appRouter = router({
       const payslip = await getPayslipById(input.id);
       if (!payslip) throw new TRPCError({ code: "NOT_FOUND" });
       await updatePayslip(input.id, { status: "sent", sentAt: new Date() });
-      // Email would be sent here with Resend
+
+      // Send email notification
+      try {
+        const employees = await getEmployeesByCompanyId(ctx.companyId);
+        const emp = employees.find((e: any) => e.id === payslip.employeeId) as any;
+        const company = await getCompanyById(ctx.companyId);
+        if (emp?.email) {
+          const { sendPayslipEmail } = await import("../email");
+          await sendPayslipEmail({
+            recipientEmail: emp.email,
+            employeeName: `${emp.firstName} ${emp.lastName}`,
+            companyName: company?.name || "Company",
+            month: payslip.month,
+            year: payslip.year,
+            netPay: payslip.netPay,
+            currency: payslip.currency || "DKK",
+          });
+        }
+      } catch (e) {
+        console.error("[Payslip] Email failed:", e);
+      }
       return { success: true };
     }),
   }),

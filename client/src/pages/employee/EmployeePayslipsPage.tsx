@@ -1,148 +1,194 @@
 import { useState, useMemo } from "react";
 import EmployeeLayout from "@/components/EmployeeLayout";
 import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Download, DollarSign } from "lucide-react";
+import { FileText, Download, X, Loader2 } from "lucide-react";
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const MONTH_FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export default function EmployeePayslipsPage() {
   const { data: payslips = [], isLoading } = trpc.payslip.myPayslips.useQuery();
+  const { data: company } = trpc.company.get.useQuery(undefined, { retry: false });
+  const { data: employees = [] } = trpc.employee.list.useQuery();
+  const { user } = trpc.useUtils().auth.me.getData() || {};
+
   const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(String(new Date().getMonth() + 1));
+  const [viewingPayslip, setViewingPayslip] = useState<any>(null);
 
   const years = useMemo(() => {
     const yrs = [...new Set(payslips.map((p: any) => p.year))].sort((a: number, b: number) => b - a);
     return yrs.length ? yrs : [new Date().getFullYear()];
   }, [payslips]);
 
-  const yearPayslips = useMemo(() => payslips.filter((p: any) => p.year === parseInt(selectedYear)), [payslips, selectedYear]);
-  const selectedPayslip = useMemo(() => selectedMonth !== null ? yearPayslips.find((p: any) => p.month === selectedMonth) : null, [yearPayslips, selectedMonth]);
+  const selectedPayslip = useMemo(() => {
+    return payslips.find((p: any) => p.year === parseInt(selectedYear) && p.month === parseInt(selectedMonth));
+  }, [payslips, selectedYear, selectedMonth]);
 
-  const yearTotal = useMemo(() => yearPayslips.reduce((sum: number, p: any) => sum + Number(p.netPay), 0), [yearPayslips]);
+  const myEmployee = useMemo(() => {
+    if (!employees.length) return null;
+    return employees.find((e: any) => e.email === (user as any)?.email) as any;
+  }, [employees, user]);
+
+  if (isLoading) {
+    return <EmployeeLayout><div className="flex items-center justify-center h-96"><Loader2 className="w-8 h-8 animate-spin text-teal-600" /></div></EmployeeLayout>;
+  }
 
   return (
     <EmployeeLayout>
-      <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">My Payslips</h1>
-            <p className="text-sm text-slate-500 mt-0.5">View and download your monthly payslips</p>
-          </div>
-          <Select value={selectedYear} onValueChange={(v) => { setSelectedYear(v); setSelectedMonth(null); }}>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">My Payslips</h1>
+          <p className="text-sm text-slate-500 mt-0.5">View and download your monthly payslips</p>
+        </div>
+
+        {/* Year + Month Dropdowns */}
+        <div className="flex items-center gap-3">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
             <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               {years.map((y: any) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Year Summary */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-slate-600 uppercase">Year Total ({selectedYear})</h3>
-            <span className="text-xl font-bold text-teal-700">{yearPayslips[0]?.currency || "DKK"} {yearTotal.toLocaleString()}</span>
-          </div>
-          <div className="text-xs text-slate-400">{yearPayslips.length} payslip{yearPayslips.length !== 1 ? "s" : ""} this year</div>
-        </div>
-
-        {/* Month Grid */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-100">
-            <h3 className="text-sm font-semibold text-slate-700">Monthly Breakdown</h3>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-0">
-            {MONTHS.map((m, i) => {
-              const payslip = yearPayslips.find((p: any) => p.month === i + 1);
-              const isSelected = selectedMonth === i + 1;
-              return (
-                <button
-                  key={i}
-                  onClick={() => payslip && setSelectedMonth(i + 1)}
-                  disabled={!payslip}
-                  className={`flex flex-col items-center py-4 px-2 border-b border-r border-slate-100 transition-all ${
-                    isSelected ? "bg-teal-50 ring-2 ring-inset ring-teal-500" :
-                    payslip ? "hover:bg-slate-50 cursor-pointer" : "opacity-40 cursor-default"
-                  }`}
-                >
-                  <span className={`text-xs font-semibold ${isSelected ? "text-teal-700" : "text-slate-600"}`}>{m}</span>
-                  {payslip ? (
-                    <span className={`text-sm font-bold mt-1 ${isSelected ? "text-teal-700" : "text-slate-800"}`}>
-                      {Number(payslip.netPay).toLocaleString()}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-300 mt-1">—</span>
-                  )}
-                  {payslip && (
-                    <Badge className={`mt-1.5 text-[9px] ${payslip.status === "sent" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                      {payslip.status}
-                    </Badge>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Selected Payslip Detail */}
-        {selectedPayslip && (
+        {/* Selected Month Payslip */}
+        {selectedPayslip ? (
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  {MONTH_FULL[(selectedPayslip as any).month - 1]} {(selectedPayslip as any).year}
-                </h3>
-                <p className="text-xs text-slate-500">Salary period: {new Date((selectedPayslip as any).salaryPeriodStart).toLocaleDateString("en-GB")} – {new Date((selectedPayslip as any).salaryPeriodEnd).toLocaleDateString("en-GB")}</p>
+                <h3 className="text-lg font-bold text-slate-900">{MONTHS[selectedPayslip.month - 1]} {selectedPayslip.year}</h3>
+                <p className="text-xs text-slate-500">
+                  {new Date(selectedPayslip.salaryPeriodStart).toLocaleDateString("en-GB")} – {new Date(selectedPayslip.salaryPeriodEnd).toLocaleDateString("en-GB")}
+                </p>
               </div>
-              <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700 transition-colors">
-                <Download size={14} /> PDF
-              </button>
+              <Badge className={selectedPayslip.status === "sent" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
+                {selectedPayslip.status}
+              </Badge>
             </div>
 
-            <div className="divide-y divide-slate-100">
-              <Row label="Gross Salary" value={`${(selectedPayslip as any).currency} ${Number((selectedPayslip as any).grossSalary).toLocaleString()}`} bold />
-              <Row label="Hours Worked" value={(selectedPayslip as any).hoursWorked || "—"} />
-              <Row label="Hourly Rate" value={(selectedPayslip as any).hourlyRate ? `${(selectedPayslip as any).currency} ${(selectedPayslip as any).hourlyRate}` : "—"} />
-
-              <div className="px-5 py-2 bg-slate-50"><span className="text-[11px] font-bold text-slate-500 uppercase">Deductions</span></div>
-              <Row label="AM Contribution (8%)" value={`-${(selectedPayslip as any).currency} ${Number((selectedPayslip as any).amContribution).toLocaleString()}`} red />
-              <Row label="A-Tax (38%)" value={`-${(selectedPayslip as any).currency} ${Number((selectedPayslip as any).aTax).toLocaleString()}`} red />
-              <Row label="Pension (3%)" value={`-${(selectedPayslip as any).currency} ${Number((selectedPayslip as any).pension).toLocaleString()}`} red />
-              <Row label="ATP" value={`-${(selectedPayslip as any).currency} ${Number((selectedPayslip as any).atp).toLocaleString()}`} red />
-              {Number((selectedPayslip as any).otherDeductions) > 0 && (
-                <Row label="Other Deductions" value={`-${(selectedPayslip as any).currency} ${Number((selectedPayslip as any).otherDeductions).toLocaleString()}`} red />
-              )}
-
-              <div className="px-5 py-4 bg-teal-50 flex items-center justify-between">
+            {/* Salary Summary */}
+            <div className="px-5 py-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">Gross Salary</span>
+                <span className="text-sm font-medium text-slate-800">{selectedPayslip.currency} {Number(selectedPayslip.grossSalary).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">Total Deductions</span>
+                <span className="text-sm font-medium text-red-600">
+                  -{selectedPayslip.currency} {(Number(selectedPayslip.grossSalary) - Number(selectedPayslip.netPay)).toLocaleString()}
+                </span>
+              </div>
+              <div className="h-px bg-slate-200" />
+              <div className="flex items-center justify-between">
                 <span className="text-base font-bold text-teal-800">Net Pay</span>
-                <span className="text-xl font-bold text-teal-700">{(selectedPayslip as any).currency} {Number((selectedPayslip as any).netPay).toLocaleString()}</span>
+                <span className="text-xl font-bold text-teal-700">{selectedPayslip.currency} {Number(selectedPayslip.netPay).toLocaleString()}</span>
               </div>
             </div>
+
+            {/* Open Full Payslip */}
+            <div className="px-5 py-3 border-t border-slate-100 flex justify-center">
+              <Button onClick={() => setViewingPayslip(selectedPayslip)} className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
+                <FileText size={16} /> View Full Payslip
+              </Button>
+            </div>
           </div>
-        )}
-
-        {!selectedPayslip && yearPayslips.length > 0 && (
-          <div className="text-center py-8 text-slate-400 text-sm">Select a month above to view payslip details</div>
-        )}
-
-        {yearPayslips.length === 0 && !isLoading && (
-          <div className="text-center py-12 text-slate-400">
+        ) : (
+          <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
             <FileText size={40} className="mx-auto mb-3 text-slate-300" />
-            <p>No payslips for {selectedYear}</p>
+            <p className="text-slate-500">No payslip for {MONTHS[parseInt(selectedMonth) - 1]} {selectedYear}</p>
           </div>
         )}
+
+        {/* Full Payslip Document View */}
+        {viewingPayslip && (() => {
+          const p = viewingPayslip;
+          const gross = Number(p.grossSalary);
+          const net = Number(p.netPay);
+          const am = Number(p.amContribution);
+          const tax = Number(p.aTax);
+          const pen = Number(p.pension);
+          const atpVal = Number(p.atp);
+          const hours = Number(p.hoursWorked) || 160.33;
+          const rate = Number(p.hourlyRate) || (gross / hours);
+          return (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center overflow-y-auto py-8">
+              <div className="bg-white w-full max-w-[620px] rounded-xl shadow-2xl mx-4">
+                {/* Toolbar */}
+                <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 sticky top-0 bg-white rounded-t-xl z-10">
+                  <h3 className="font-bold text-slate-900">Payslip — {MONTHS[p.month - 1]} {p.year}</h3>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.print()}><Download size={14} className="mr-1" /> PDF</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setViewingPayslip(null)}><X size={16} /></Button>
+                  </div>
+                </div>
+
+                {/* Document */}
+                <div className="p-6 text-[11px] font-mono leading-tight" id="payslip-doc">
+                  {/* Header */}
+                  <div className="flex justify-between mb-5">
+                    <div>
+                      <p className="font-bold text-sm">{company?.name || "Company"}</p>
+                      <p className="text-slate-500">{company?.address || ""}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">{myEmployee?.firstName} {myEmployee?.lastName}</p>
+                      <p className="text-slate-500">ID: EMP-{myEmployee?.id}</p>
+                      <p className="text-slate-500">{myEmployee?.department}</p>
+                    </div>
+                  </div>
+
+                  {/* Meta */}
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 mb-5 border border-slate-200 rounded-lg p-3 bg-slate-50 text-[10px]">
+                    <div className="flex justify-between"><span className="text-slate-500">Salary period</span><span>{new Date(p.salaryPeriodStart).toLocaleDateString("en-GB")} – {new Date(p.salaryPeriodEnd).toLocaleDateString("en-GB")}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Payment date</span><span>{new Date(p.salaryPeriodEnd).toLocaleDateString("en-GB")}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Bank account</span><span>{p.bankAccount || "—"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Currency</span><span>{p.currency}</span></div>
+                  </div>
+
+                  {/* Table */}
+                  <table className="w-full text-[10px] border border-slate-200 rounded overflow-hidden mb-5">
+                    <thead>
+                      <tr className="bg-slate-800 text-white">
+                        <th className="text-left py-1.5 px-2">Text</th>
+                        <th className="text-right py-1.5 px-2 w-16">Basis</th>
+                        <th className="text-right py-1.5 px-2 w-12">Rate</th>
+                        <th className="text-right py-1.5 px-2 w-20">Paid out</th>
+                        <th className="text-right py-1.5 px-2 w-20">Deducted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">Salary</td><td className="text-right px-2">{hours.toFixed(2)}</td><td className="text-right px-2">{rate.toFixed(2)}</td><td className="text-right px-2 text-emerald-700">{gross.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td><td></td></tr>
+                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">ATP</td><td className="text-right px-2">{hours.toFixed(2)}</td><td></td><td></td><td className="text-right px-2 text-red-600">{atpVal.toFixed(2)}</td></tr>
+                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">Pension ({gross > 0 ? ((pen/gross)*100).toFixed(0) : 0}%)</td><td className="text-right px-2">{gross.toLocaleString("da-DK")}</td><td className="text-right px-2">{gross > 0 ? ((pen/gross)*100).toFixed(0) : 0}%</td><td></td><td className="text-right px-2 text-red-600">{pen.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
+                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">AM contribution (8%)</td><td className="text-right px-2">{(gross-pen).toLocaleString("da-DK")}</td><td className="text-right px-2">8%</td><td></td><td className="text-right px-2 text-red-600">{am.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
+                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">A-tax (38%)</td><td className="text-right px-2">{(gross-pen-am).toLocaleString("da-DK")}</td><td className="text-right px-2">38%</td><td></td><td className="text-right px-2 text-red-600">{tax.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
+                      {Number(p.otherDeductions) > 0 && <tr className="border-b border-slate-100"><td className="py-1.5 px-2">Other deductions</td><td></td><td></td><td></td><td className="text-right px-2 text-red-600">{Number(p.otherDeductions).toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-teal-50 border-t-2 border-teal-300">
+                        <td className="py-2.5 px-2 font-bold text-teal-800" colSpan={3}>Net pay</td>
+                        <td className="text-right px-2 font-bold text-teal-700 text-sm" colSpan={2}>{net.toLocaleString("da-DK", {minimumFractionDigits: 2})} {p.currency}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+
+                  {/* Footer */}
+                  <p className="text-center text-[9px] text-slate-400">Generated by SANI · {company?.name} · {new Date().toLocaleDateString("en-GB")}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </EmployeeLayout>
-  );
-}
-
-function Row({ label, value, bold, red }: { label: string; value: string; bold?: boolean; red?: boolean }) {
-  return (
-    <div className="flex items-center justify-between px-5 py-3">
-      <span className={`text-sm ${bold ? "font-semibold text-slate-800" : "text-slate-600"}`}>{label}</span>
-      <span className={`text-sm font-medium ${red ? "text-red-600" : bold ? "font-bold text-slate-900" : "text-slate-800"}`}>{value}</span>
-    </div>
   );
 }
