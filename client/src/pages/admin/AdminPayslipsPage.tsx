@@ -120,6 +120,7 @@ export default function AdminPayslipsPage() {
       otherDeductions: String(Number(sundhedsforsikring) + Number(frokost)),
       otherAdditions: String(Number(greatPrayerDay) + Number(otherAdditions)),
       bankAccount: emp?.bankAccount || emp?.metadata?.bankAccount || undefined,
+      deductionDetails: calc.lines,
     });
   };
 

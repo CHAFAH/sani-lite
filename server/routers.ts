@@ -911,6 +911,8 @@ export const appRouter = router({
         otherDeductions: z.string().optional(),
         otherAdditions: z.string().optional(),
         bankAccount: z.string().optional(),
+        deductionDetails: z.any().optional(),
+        additionDetails: z.any().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const start = new Date(input.year, input.month - 1, 1);
@@ -925,7 +927,10 @@ export const appRouter = router({
           amContribution: input.amContribution || "0", aTax: input.aTax || "0",
           pension: input.pension || "0", atp: input.atp || "0",
           otherDeductions: input.otherDeductions || "0", otherAdditions: input.otherAdditions || "0",
-          bankAccount: input.bankAccount || null, status: "draft",
+          bankAccount: input.bankAccount || null,
+          deductionDetails: input.deductionDetails || null,
+          additionDetails: input.additionDetails || null,
+          status: "draft",
         });
         return { success: true, payslipId: result.insertId };
       }),

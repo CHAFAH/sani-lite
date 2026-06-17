@@ -154,7 +154,7 @@ export default function EmployeePayslipsPage() {
                     <div className="flex justify-between"><span className="text-slate-500">Currency</span><span>{p.currency}</span></div>
                   </div>
 
-                  {/* Table */}
+                  {/* Table - uses stored line items if available */}
                   <table className="w-full text-[10px] border border-slate-200 rounded overflow-hidden mb-5">
                     <thead>
                       <tr className="bg-slate-800 text-white">
@@ -166,12 +166,25 @@ export default function EmployeePayslipsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">Salary</td><td className="text-right px-2">{hours.toFixed(2)}</td><td className="text-right px-2">{rate.toFixed(2)}</td><td className="text-right px-2 text-emerald-700">{gross.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td><td></td></tr>
-                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">ATP</td><td className="text-right px-2">{hours.toFixed(2)}</td><td></td><td></td><td className="text-right px-2 text-red-600">{atpVal.toFixed(2)}</td></tr>
-                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">Pension ({gross > 0 ? ((pen/gross)*100).toFixed(0) : 0}%)</td><td className="text-right px-2">{gross.toLocaleString("da-DK")}</td><td className="text-right px-2">{gross > 0 ? ((pen/gross)*100).toFixed(0) : 0}%</td><td></td><td className="text-right px-2 text-red-600">{pen.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
-                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">AM contribution (8%)</td><td className="text-right px-2">{(gross-pen).toLocaleString("da-DK")}</td><td className="text-right px-2">8%</td><td></td><td className="text-right px-2 text-red-600">{am.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
-                      <tr className="border-b border-slate-100"><td className="py-1.5 px-2">A-tax (38%)</td><td className="text-right px-2">{(gross-pen-am).toLocaleString("da-DK")}</td><td className="text-right px-2">38%</td><td></td><td className="text-right px-2 text-red-600">{tax.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
-                      {Number(p.otherDeductions) > 0 && <tr className="border-b border-slate-100"><td className="py-1.5 px-2">Other deductions</td><td></td><td></td><td></td><td className="text-right px-2 text-red-600">{Number(p.otherDeductions).toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>}
+                      {p.deductionDetails && Array.isArray(p.deductionDetails) ? (
+                        p.deductionDetails.map((line: any, idx: number) => (
+                          <tr key={idx} className="border-b border-slate-100">
+                            <td className="py-1.5 px-2">{line.text}</td>
+                            <td className="text-right px-2">{line.basis || ""}</td>
+                            <td className="text-right px-2">{line.rate || ""}</td>
+                            <td className="text-right px-2 text-emerald-700">{line.paidOut ? Number(line.paidOut).toLocaleString("da-DK", {minimumFractionDigits: 2}) : ""}</td>
+                            <td className="text-right px-2 text-red-600">{line.deducted ? Number(line.deducted).toLocaleString("da-DK", {minimumFractionDigits: 2}) : ""}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <>
+                          <tr className="border-b border-slate-100"><td className="py-1.5 px-2">Salary</td><td className="text-right px-2">{hours.toFixed(2)}</td><td className="text-right px-2">{rate.toFixed(2)}</td><td className="text-right px-2 text-emerald-700">{gross.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td><td></td></tr>
+                          <tr className="border-b border-slate-100"><td className="py-1.5 px-2">ATP</td><td></td><td></td><td></td><td className="text-right px-2 text-red-600">{atpVal.toFixed(2)}</td></tr>
+                          <tr className="border-b border-slate-100"><td className="py-1.5 px-2">Pension</td><td></td><td></td><td></td><td className="text-right px-2 text-red-600">{pen.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
+                          <tr className="border-b border-slate-100"><td className="py-1.5 px-2">AM contribution (8%)</td><td></td><td className="text-right px-2">8%</td><td></td><td className="text-right px-2 text-red-600">{am.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
+                          <tr className="border-b border-slate-100"><td className="py-1.5 px-2">A-tax</td><td></td><td className="text-right px-2">38%</td><td></td><td className="text-right px-2 text-red-600">{tax.toLocaleString("da-DK", {minimumFractionDigits: 2})}</td></tr>
+                        </>
+                      )}
                     </tbody>
                     <tfoot>
                       <tr className="bg-teal-50 border-t-2 border-teal-300">
