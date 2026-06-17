@@ -65,6 +65,7 @@ import AdminCompanySettingsPage from "./pages/admin/AdminCompanySettingsPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import EmployeeExpensesPage from "@/pages/employee/EmployeeExpensesPage";
 import AdminPayrollHubPage from "./pages/admin/AdminPayrollHubPage2";
+import AdminPayslipsPage from "./pages/admin/AdminPayslipsPage";
 import AdminGlobalPayrollPage from "./pages/admin/AdminGlobalPayrollPage";
 import {
 
@@ -175,6 +176,7 @@ function Router() {
       <Route path="/admin/time-off" component={AdminTimeOffPage} />
       <Route path="/admin/payroll" component={AdminPayrollHubPage} />
       <Route path="/admin/payroll-hub" component={AdminPayrollHubPage} />
+      <Route path="/admin/payslips" component={AdminPayslipsPage} />
       <Route path="/admin/global-payroll" component={AdminGlobalPayrollPage} />
       <Route path="/admin/benefits" component={AdminBenefitsPage} />
       <Route path="/admin/hiring" component={AdminHiringPage} />

@@ -34,6 +34,8 @@ import {
   createFeedback, getFeedbackByEmployeeId, getFeedbackByCompanyId,
   getEmployeeByUserId, getEmployeesByManagerId, updateUserRole, updateUserProfileCompleted, getUsersByCompanyId,
   setUserCompanyId,
+  // Payslips
+  createPayslip, getPayslipsByCompany, getPayslipsByEmployee, updatePayslip, getPayslipById,
   // Finance OS
   createExpense, getExpensesByCompanyId, updateExpenseStatus,
   createCorporateCard, getCorporateCardsByCompanyId, updateCardStatus,
@@ -888,6 +890,67 @@ export const appRouter = router({
   }),
 
   // ============================================================
+  // ============================================================
+  // PAYSLIP ROUTER
+  // ============================================================
+  payslip: router({
+    create: companyProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        month: z.number().min(1).max(12),
+        year: z.number(),
+        grossSalary: z.string(),
+        netPay: z.string(),
+        currency: z.string().default("DKK"),
+        hoursWorked: z.string().optional(),
+        hourlyRate: z.string().optional(),
+        amContribution: z.string().optional(),
+        aTax: z.string().optional(),
+        pension: z.string().optional(),
+        atp: z.string().optional(),
+        otherDeductions: z.string().optional(),
+        otherAdditions: z.string().optional(),
+        bankAccount: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const start = new Date(input.year, input.month - 1, 1);
+        const end = new Date(input.year, input.month, 0);
+        const result = await createPayslip({
+          companyId: ctx.companyId, employeeId: input.employeeId,
+          month: input.month, year: input.year,
+          salaryPeriodStart: start, salaryPeriodEnd: end,
+          grossSalary: input.grossSalary, netPay: input.netPay,
+          currency: input.currency,
+          hoursWorked: input.hoursWorked || null, hourlyRate: input.hourlyRate || null,
+          amContribution: input.amContribution || "0", aTax: input.aTax || "0",
+          pension: input.pension || "0", atp: input.atp || "0",
+          otherDeductions: input.otherDeductions || "0", otherAdditions: input.otherAdditions || "0",
+          bankAccount: input.bankAccount || null, status: "draft",
+        });
+        return { success: true, payslipId: result.insertId };
+      }),
+    listByCompany: companyProcedure.query(async ({ ctx }) => getPayslipsByCompany(ctx.companyId)),
+    listByEmployee: companyProcedure.input(z.object({ employeeId: z.number() })).query(async ({ input }) => getPayslipsByEmployee(input.employeeId)),
+    myPayslips: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user.companyId) return [];
+      const employees = await getEmployeesByCompanyId(ctx.user.companyId);
+      const myEmp = employees.find((e: any) => e.userId === ctx.user.id || e.email === ctx.user.email);
+      if (!myEmp) return [];
+      return getPayslipsByEmployee(myEmp.id);
+    }),
+    validate: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await updatePayslip(input.id, { status: "validated" });
+      return { success: true };
+    }),
+    send: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      const payslip = await getPayslipById(input.id);
+      if (!payslip) throw new TRPCError({ code: "NOT_FOUND" });
+      await updatePayslip(input.id, { status: "sent", sentAt: new Date() });
+      // Email would be sent here with Resend
+      return { success: true };
+    }),
+  }),
+
   // FEEDBACK ROUTER
   // ============================================================
   feedback: router({

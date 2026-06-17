@@ -28,6 +28,7 @@ import {
   devices, appProvisioning, accessControl,
   predictions, recommendations, aiChatHistory,
   apiKeys, webhooks, webhookEvents, marketplaceApps, marketplaceInstallations,
+  payslips,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1374,4 +1375,38 @@ export async function updateMarketplaceInstallationStatus(installationId: number
   const data: any = { status };
   if (status === "uninstalled") data.uninstalledAt = new Date();
   return db.update(marketplaceInstallations).set(data).where(eq(marketplaceInstallations.id, installationId));
+}
+
+
+// ── Payslips ──
+export async function createPayslip(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(payslips).values(data);
+  return { insertId: result[0].insertId };
+}
+
+export async function getPayslipsByEmployee(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(payslips).where(eq(payslips.employeeId, employeeId)).orderBy(desc(payslips.year), desc(payslips.month));
+}
+
+export async function getPayslipsByCompany(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(payslips).where(eq(payslips.companyId, companyId)).orderBy(desc(payslips.year), desc(payslips.month));
+}
+
+export async function updatePayslip(id: number, data: any) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(payslips).set(data).where(eq(payslips.id, id));
+}
+
+export async function getPayslipById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(payslips).where(eq(payslips.id, id)).limit(1);
+  return result[0] || null;
 }

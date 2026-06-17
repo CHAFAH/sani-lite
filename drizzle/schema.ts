@@ -913,3 +913,37 @@ export const marketplaceInstallations = mysqlTable("marketplace_installations", 
 });
 export type MarketplaceInstallation = typeof marketplaceInstallations.$inferSelect;
 export type InsertMarketplaceInstallation = typeof marketplaceInstallations.$inferInsert;
+
+
+// Payslips
+export const payslips = mysqlTable("payslips", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  employeeId: int("employeeId").notNull(),
+  month: int("month").notNull(),
+  year: int("year").notNull(),
+  salaryPeriodStart: timestamp("salaryPeriodStart").notNull(),
+  salaryPeriodEnd: timestamp("salaryPeriodEnd").notNull(),
+  grossSalary: decimal("grossSalary", { precision: 12, scale: 2 }).notNull(),
+  netPay: decimal("netPay", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("DKK"),
+  hoursWorked: decimal("hoursWorked", { precision: 6, scale: 2 }),
+  hourlyRate: decimal("hourlyRate", { precision: 8, scale: 2 }),
+  amContribution: decimal("amContribution", { precision: 10, scale: 2 }).default("0"),
+  aTax: decimal("aTax", { precision: 10, scale: 2 }).default("0"),
+  pension: decimal("pension", { precision: 10, scale: 2 }).default("0"),
+  atp: decimal("atp", { precision: 10, scale: 2 }).default("0"),
+  otherDeductions: decimal("otherDeductions", { precision: 10, scale: 2 }).default("0"),
+  otherAdditions: decimal("otherAdditions", { precision: 10, scale: 2 }).default("0"),
+  deductionDetails: json("deductionDetails"),
+  additionDetails: json("additionDetails"),
+  bankAccount: varchar("bankAccount", { length: 50 }),
+  status: mysqlEnum("status", ["draft", "validated", "sent"]).default("draft"),
+  sentAt: timestamp("sentAt"),
+  pdfUrl: text("pdfUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Payslip = typeof payslips.$inferSelect;
+export type InsertPayslip = typeof payslips.$inferInsert;

@@ -58,6 +58,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Global Payroll", icon: Globe, href: "/admin/global-payroll", badge: "NEW" },
       { label: "Payroll Hub", icon: Receipt, href: "/admin/payroll", badge: "★" },
+      { label: "Payslips", icon: FileText, href: "/admin/payslips" },
       { label: "Benefits", icon: Heart, href: "/admin/benefits" },
       { label: "Compensation", icon: DollarSign, href: "/admin/compensation" },
     ],
