@@ -102,6 +102,12 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
+export async function updateUserPassword(id: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ passwordHash }).where(eq(users.id, id));
+}
+
 // ============================================================
 // COMPANY QUERIES
 // ============================================================
@@ -1409,4 +1415,10 @@ export async function getPayslipById(id: number) {
   if (!db) return null;
   const result = await db.select().from(payslips).where(eq(payslips.id, id)).limit(1);
   return result[0] || null;
+}
+
+export async function deletePayslip(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(payslips).where(eq(payslips.id, id));
 }

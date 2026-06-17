@@ -5,10 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Send, Check, Plus, Loader2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { FileText, Send, Check, Plus, Loader2, X, ChevronDown, ChevronUp, Download, MoreHorizontal, Trash2, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
+function sanitizeNumericInput(value: string) {
+  return value.replace(/[^0-9.-]+/g, "");
+}
+
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+function normalizeSearch(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+const PAYSLIP_STATUS_SYNONYMS: Record<string, string[]> = {
+  draft: ["created", "create", "crear", "new", "draft"],
+  validated: ["created", "create", "crear", "new", "validated"],
+  sent: ["sent", "delivered", "paid"],
+};
 
 // Danish working hours per month (approx based on weekdays)
 const WORK_HOURS_PER_MONTH = [160.33, 149.33, 168.00, 160.33, 160.33, 157.67, 176.00, 160.33, 176.00, 176.00, 160.33, 165.33];
@@ -29,9 +48,25 @@ export default function AdminPayslipsPage() {
   const { data: employees = [] } = trpc.employee.list.useQuery();
   const { data: company } = trpc.company.get.useQuery(undefined, { retry: false });
   const { data: payslips = [], refetch } = trpc.payslip.listByCompany.useQuery();
-  const createMut = trpc.payslip.create.useMutation({ onSuccess: () => { refetch(); toast.success("Payslip created"); setShowForm(false); } });
+  const createMut = trpc.payslip.create.useMutation({
+    onSuccess: () => { refetch(); toast.success("Payslip created"); setShowForm(false); },
+    onError: (error) => { toast.error(error.message || "Failed to create payslip"); },
+  });
   const validateMut = trpc.payslip.validate.useMutation({ onSuccess: () => { refetch(); toast.success("Payslip validated"); } });
-  const sendMut = trpc.payslip.send.useMutation({ onSuccess: () => { refetch(); toast.success("Payslip sent to employee"); } });
+  const sendMut = trpc.payslip.send.useMutation({
+    onSuccess: () => { refetch(); toast.success("Payslip sent to employee"); },
+    onError: (error) => {
+      toast.error(error.message || "Failed to send payslip");
+    },
+  });
+  const deleteMut = trpc.payslip.delete.useMutation({
+    onSuccess: () => { refetch(); toast.success("Payslip deleted"); },
+    onError: (error) => { toast.error(error.message || "Failed to delete payslip"); },
+  });
+  const updateMut = trpc.payslip.update.useMutation({
+    onSuccess: () => { refetch(); toast.success("Payslip updated"); setEditingPayslip(null); },
+    onError: (error) => { toast.error(error.message || "Failed to update payslip"); },
+  });
 
   const [showForm, setShowForm] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState("");
@@ -39,6 +74,15 @@ export default function AdminPayslipsPage() {
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [expandedPayslip, setExpandedPayslip] = useState<number | null>(null);
   const [viewingPayslip, setViewingPayslip] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [createEmployeeSearch, setCreateEmployeeSearch] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [editingPayslip, setEditingPayslip] = useState<any>(null);
+  const [editGross, setEditGross] = useState("");
+  const [editTaxDeduction, setEditTaxDeduction] = useState("7938");
+  const [editTaxRate, setEditTaxRate] = useState("38");
+  const [editPensionRate, setEditPensionRate] = useState("3");
+  const [editAtp, setEditAtp] = useState("99");
 
   // Payslip calculation state
   const [grossSalary, setGrossSalary] = useState("");
@@ -53,7 +97,52 @@ export default function AdminPayslipsPage() {
   const [greatPrayerDay, setGreatPrayerDay] = useState("0");
   const [otherAdditions, setOtherAdditions] = useState("0");
 
-  const emp = useMemo(() => employees.find((e: any) => String(e.id) === selectedEmployee), [employees, selectedEmployee]);
+  const emp = useMemo(() => employees.find((e: any) => String(e.id) === selectedEmployee) as any, [employees, selectedEmployee]);
+
+  const departmentCounts = useMemo(() => {
+    return employees.reduce((agg: Record<string, number>, e: any) => {
+      const dept = e.department || "Unassigned";
+      agg[dept] = (agg[dept] || 0) + 1;
+      return agg;
+    }, {});
+  }, [employees]);
+
+  const filteredPayslips = useMemo(() => {
+    const term = normalizeSearch(searchTerm);
+    return payslips.filter((p: any) => {
+      const empData = employees.find((e: any) => e.id === p.employeeId);
+      const name = empData ? `${empData.firstName} ${empData.lastName}`.toLowerCase() : "";
+      const dept = empData?.department || "Unassigned";
+      const statusText = p.status ? PAYSLIP_STATUS_SYNONYMS[p.status]?.join(" ") : p.status || "";
+      const allText = `${name} ${dept} ${p.status || ""} ${statusText} ${MONTHS[p.month - 1]} ${p.year}`;
+      const normalizedText = normalizeSearch(allText);
+      const matchesName = !term || normalizedText.includes(term);
+      const matchesDept = departmentFilter === "all" || dept === departmentFilter;
+      return matchesName && matchesDept;
+    });
+  }, [payslips, employees, searchTerm, departmentFilter]);
+
+  const filteredEmployees = useMemo(() => {
+    const term = normalizeSearch(createEmployeeSearch);
+    return employees.filter((e: any) => {
+      const text = `${e.firstName} ${e.lastName} ${e.position || ""} ${e.department || ""}`;
+      return !term || normalizeSearch(text).includes(term);
+    });
+  }, [employees, createEmployeeSearch]);
+
+  useEffect(() => {
+    if (!selectedEmployee && createEmployeeSearch.trim() && filteredEmployees.length === 1) {
+      setSelectedEmployee(String(filteredEmployees[0].id));
+    }
+  }, [createEmployeeSearch, filteredEmployees, selectedEmployee]);
+
+  const handlePayslipRowClick = (p: any, isExpanded: boolean) => {
+    if (p.pdfUrl) {
+      window.open(p.pdfUrl, "_blank");
+      return;
+    }
+    setExpandedPayslip(isExpanded ? null : p.id);
+  };
 
   // Auto-calculate when employee selected
   useEffect(() => {
@@ -64,7 +153,7 @@ export default function AdminPayslipsPage() {
 
   // Full calculation
   const calc = useMemo(() => {
-    const gross = Number(grossSalary) || 0;
+    const gross = Number(sanitizeNumericInput(grossSalary)) || 0;
     const m = parseInt(month);
     const hours = calcWorkingHours(m, parseInt(year));
     const hourlyRate = gross > 0 ? gross / hours : 0;
@@ -107,10 +196,19 @@ export default function AdminPayslipsPage() {
   }, [grossSalary, month, year, taxDeduction, taxRate, pensionRate, companyPensionRate, atpAmount, sundhedsforsikring, frokost, greatPrayerDay, otherAdditions, amRate]);
 
   const handleCreate = () => {
-    if (!selectedEmployee || !grossSalary) { toast.error("Select employee and enter salary"); return; }
+    const sanitizedSalary = sanitizeNumericInput(grossSalary);
+    if (!selectedEmployee || !sanitizedSalary) {
+      toast.error("Select employee and enter salary");
+      return;
+    }
+    const numericSalary = Number(sanitizedSalary);
+    if (Number.isNaN(numericSalary) || numericSalary <= 0) {
+      toast.error("Enter a valid salary amount");
+      return;
+    }
     createMut.mutate({
       employeeId: parseInt(selectedEmployee), month: parseInt(month), year: parseInt(year),
-      grossSalary: grossSalary, netPay: String(Math.round(calc.netPay * 100) / 100),
+      grossSalary: sanitizedSalary, netPay: String(Math.round(calc.netPay * 100) / 100),
       currency: emp?.currency || "DKK",
       hoursWorked: String(calc.hours), hourlyRate: String(Math.round(calc.hourlyRate * 100) / 100),
       amContribution: String(Math.round(calc.amContribution * 100) / 100),
@@ -137,6 +235,33 @@ export default function AdminPayslipsPage() {
           </Button>
         </div>
 
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(departmentCounts).map(([dept, count]) => (
+              <Badge key={dept} className="bg-slate-100 text-slate-700" title={`${count} employees`}>
+                {dept}: {count}
+              </Badge>
+            ))}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch">
+            <Input
+              placeholder="Search employee or department"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="min-w-[240px]"
+            />
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All departments</SelectItem>
+                {Object.keys(departmentCounts).sort().map((dept) => (
+                  <SelectItem key={dept} value={dept}>{dept} ({departmentCounts[dept]})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* ══ CREATE PAYSLIP FORM ══ */}
         {showForm && (
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -151,10 +276,16 @@ export default function AdminPayslipsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Employee</label>
-                  <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                  <Input
+                    placeholder="Search employees..."
+                    value={createEmployeeSearch}
+                    onChange={(e) => setCreateEmployeeSearch(e.target.value)}
+                    className="mb-2"
+                  />
+                  <Select value={selectedEmployee} onValueChange={(value) => { setSelectedEmployee(value); setCreateEmployeeSearch(""); }}>
                     <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
                     <SelectContent>
-                      {employees.map((e: any) => (
+                      {filteredEmployees.map((e: any) => (
                         <SelectItem key={e.id} value={String(e.id)}>{e.firstName} {e.lastName} — {e.position}</SelectItem>
                       ))}
                     </SelectContent>
@@ -215,7 +346,7 @@ export default function AdminPayslipsPage() {
               </div>
 
               {/* Payslip Preview */}
-              {Number(grossSalary) > 0 && (
+              {Number(sanitizeNumericInput(grossSalary)) > 0 && (
                 <div className="border border-slate-200 rounded-lg overflow-hidden">
                   <div className="bg-slate-800 text-white px-4 py-2 text-xs font-bold uppercase tracking-wider flex">
                     <span className="flex-1">Text</span>
@@ -242,10 +373,15 @@ export default function AdminPayslipsPage() {
 
               {/* Create Button */}
               <div className="flex justify-end pt-2">
-                <Button onClick={handleCreate} disabled={createMut.isPending || !selectedEmployee} className="bg-teal-600 hover:bg-teal-700 text-white px-8 h-11">
+                <Button onClick={handleCreate} disabled={createMut.isPending || !selectedEmployee || !sanitizeNumericInput(grossSalary)} className="bg-teal-600 hover:bg-teal-700 text-white px-8 h-11">
                   {createMut.isPending ? <Loader2 size={16} className="mr-2 animate-spin" /> : <FileText size={16} className="mr-2" />}
                   Create Payslip
                 </Button>
+                {(!selectedEmployee || !grossSalary.trim()) && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    { !selectedEmployee ? "Please select an employee before creating a payslip." : "Please enter a gross salary amount." }
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -265,12 +401,12 @@ export default function AdminPayslipsPage() {
               </tr>
             </thead>
             <tbody>
-              {payslips.map((p: any) => {
-                const empData = employees.find((e: any) => e.id === p.employeeId);
+              {filteredPayslips.map((p: any) => {
+                const empData = employees.find((e: any) => e.id === p.employeeId) as any;
                 const isExpanded = expandedPayslip === p.id;
                 return (
                   <>
-                    <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50/50 cursor-pointer" onClick={() => setExpandedPayslip(isExpanded ? null : p.id)}>
+                    <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50/50 cursor-pointer" onClick={() => handlePayslipRowClick(p, isExpanded)}>
                       <td className="py-3 px-4 font-medium text-slate-800">{empData ? `${empData.firstName} ${empData.lastName}` : `#${p.employeeId}`}</td>
                       <td className="py-3 px-4 text-slate-600">{MONTHS[p.month - 1]} {p.year}</td>
                       <td className="py-3 px-4 text-right font-mono">{p.currency} {Number(p.grossSalary).toLocaleString()}</td>
@@ -279,10 +415,62 @@ export default function AdminPayslipsPage() {
                         <Badge className={p.status === "sent" ? "bg-emerald-100 text-emerald-700" : p.status === "validated" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}>{p.status}</Badge>
                       </td>
                       <td className="py-3 px-4 text-right space-x-2">
+                        {p.pdfUrl ? (
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); window.open(p.pdfUrl, "_blank"); }}>
+                            <Download size={16} />
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-slate-400" onClick={(e) => { e.stopPropagation(); setViewingPayslip(p); }}>
+                            <Download size={16} />
+                          </Button>
+                        )}
                         <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setViewingPayslip(p); }} className="text-slate-600"><FileText size={14} className="mr-1" />View</Button>
                         {p.status === "draft" && <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); validateMut.mutate({ id: p.id }); }}><Check size={14} className="mr-1" />Validate</Button>}
-                        {p.status === "validated" && <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white" onClick={(e) => { e.stopPropagation(); sendMut.mutate({ id: p.id }); }}><Send size={14} className="mr-1" />Send</Button>}
+                        {p.status === "validated" && <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white" onClick={(e) => { e.stopPropagation(); sendMut.mutate({ id: p.id }); }} disabled={sendMut.isPending}>
+                          {sendMut.isPending ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Send size={14} className="mr-1" />}Send
+                        </Button>}
                         {p.status === "sent" && <span className="text-xs text-slate-400">Delivered</span>}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                              <MoreHorizontal size={16} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); if (p.pdfUrl) window.open(p.pdfUrl, "_blank"); else setViewingPayslip(p); }}>
+                              <Download size={14} className="mr-2" />{p.pdfUrl ? "Download PDF" : "View details"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setViewingPayslip(p); }}>
+                              <FileText size={14} className="mr-2" />View payslip
+                            </DropdownMenuItem>
+                            {p.status === "validated" && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); sendMut.mutate({ id: p.id }); }}>
+                                <Send size={14} className="mr-2" />Send now
+                              </DropdownMenuItem>
+                            )}
+                            {p.status === "sent" && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); sendMut.mutate({ id: p.id }); }}>
+                                <RefreshCw size={14} className="mr-2" />Resend
+                              </DropdownMenuItem>
+                            )}
+                            {p.status !== "sent" && (
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingPayslip(p);
+                                setEditGross(p.grossSalary?.toString() || "");
+                              }}>
+                                <Pencil size={14} className="mr-2" />Edit
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm("Delete this payslip? This cannot be undone.")) deleteMut.mutate({ id: p.id });
+                            }}>
+                              <Trash2 size={14} className="mr-2" />Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         {isExpanded ? <ChevronUp size={14} className="inline text-slate-400" /> : <ChevronDown size={14} className="inline text-slate-400" />}
                       </td>
                     </tr>
@@ -298,6 +486,7 @@ export default function AdminPayslipsPage() {
                             <div><span className="text-slate-500">ATP:</span> <span className="font-medium text-red-600">-{p.currency} {Number(p.atp).toLocaleString()}</span></div>
                             <div><span className="text-slate-500">Bank:</span> <span className="font-medium">{p.bankAccount ? p.bankAccount.substring(0, 4) + " ****" : "—"}</span></div>
                             <div><span className="text-slate-500">Sent:</span> <span className="font-medium">{p.sentAt ? new Date(p.sentAt).toLocaleDateString("en-GB") : "—"}</span></div>
+                            <div><span className="text-slate-500">Message ID:</span> <span className="font-medium">{p.emailMessageId || "—"}</span></div>
                           </div>
                         </td>
                       </tr>
@@ -408,6 +597,70 @@ export default function AdminPayslipsPage() {
                   <div className="mt-6 text-center text-[10px] text-slate-400">
                     <p>Generated by SANI · {company?.name} · {new Date().toLocaleDateString("en-GB")}</p>
                   </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ══ EDIT PAYSLIP MODAL ══ */}
+        {editingPayslip && (() => {
+          const p = editingPayslip;
+          const empData = employees.find((e: any) => e.id === p.employeeId) as any;
+          const gross = Number(sanitizeNumericInput(editGross)) || 0;
+          const hours = Number(p.hoursWorked) || 160.33;
+          const hourlyRate = gross > 0 ? gross / hours : 0;
+          const pensionEmp = gross * (Number(editPensionRate) / 100);
+          const amIncomeBase = gross - pensionEmp;
+          const amContribution = amIncomeBase * 0.08;
+          const deduction = Number(editTaxDeduction) || 0;
+          const aTaxBase = amIncomeBase - amContribution - deduction;
+          const aTax = Math.max(0, aTaxBase * (Number(editTaxRate) / 100));
+          const atp = Number(editAtp) || 0;
+          const netPay = gross - pensionEmp - amContribution - aTax - atp;
+
+          return (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+              <div className="bg-white w-full max-w-md rounded-xl shadow-2xl mx-4 p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-slate-900">Edit Payslip — {empData ? `${empData.firstName} ${empData.lastName}` : `#${p.employeeId}`}</h3>
+                  <Button variant="ghost" size="sm" onClick={() => setEditingPayslip(null)}><X size={16} /></Button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Gross Salary</label>
+                    <Input value={editGross} onChange={(e) => setEditGross(e.target.value)} className="mt-1" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-xs text-slate-500">Tax Deduction</label><Input value={editTaxDeduction} onChange={(e) => setEditTaxDeduction(e.target.value)} className="mt-0.5 h-8 text-sm" /></div>
+                    <div><label className="text-xs text-slate-500">Tax Rate %</label><Input value={editTaxRate} onChange={(e) => setEditTaxRate(e.target.value)} className="mt-0.5 h-8 text-sm" /></div>
+                    <div><label className="text-xs text-slate-500">Pension %</label><Input value={editPensionRate} onChange={(e) => setEditPensionRate(e.target.value)} className="mt-0.5 h-8 text-sm" /></div>
+                    <div><label className="text-xs text-slate-500">ATP</label><Input value={editAtp} onChange={(e) => setEditAtp(e.target.value)} className="mt-0.5 h-8 text-sm" /></div>
+                  </div>
+                  <div className="bg-teal-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-slate-500">Calculated Net Pay</p>
+                    <p className="text-lg font-bold text-teal-700">{netPay.toLocaleString("da-DK", { minimumFractionDigits: 2 })} {p.currency || "DKK"}</p>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setEditingPayslip(null)}>Cancel</Button>
+                  <Button className="bg-teal-600 hover:bg-teal-700 text-white" disabled={updateMut.isPending} onClick={() => {
+                    updateMut.mutate({
+                      id: p.id,
+                      grossSalary: String(gross),
+                      netPay: String(Math.round(netPay * 100) / 100),
+                      hoursWorked: String(hours),
+                      hourlyRate: String(Math.round(hourlyRate * 100) / 100),
+                      amContribution: String(Math.round(amContribution * 100) / 100),
+                      aTax: String(Math.round(aTax * 100) / 100),
+                      pension: String(Math.round(pensionEmp * 100) / 100),
+                      atp: String(atp),
+                      status: "draft",
+                    });
+                  }}>
+                    {updateMut.isPending ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Pencil size={14} className="mr-1" />}
+                    Save Changes
+                  </Button>
                 </div>
               </div>
             </div>

@@ -36,6 +36,7 @@ import {
   setUserCompanyId,
   // Payslips
   createPayslip, getPayslipsByCompany, getPayslipsByEmployee, updatePayslip, getPayslipById,
+  getEmployeeById,
   // Finance OS
   createExpense, getExpensesByCompanyId, updateExpenseStatus,
   createCorporateCard, getCorporateCardsByCompanyId, updateCardStatus,
@@ -51,6 +52,7 @@ import {
   // Developer Platform
   createWebhook, getWebhooksByCompanyId, updateWebhookStatus,
   getMarketplaceApps, createMarketplaceInstallation, getMarketplaceInstallationsByCompanyId,
+  deletePayslip,
 } from "./db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -803,7 +805,7 @@ export const appRouter = router({
 
         // Send invitation email
         const company = await getCompanyById(ctx.companyId);
-        const origin = input.origin || "https://sanilite-ghfksw6x.manus.space";
+        const origin = input.origin || "http://localhost:3000";
         const inviteLink = `${origin}/invite?token=${token}`;
         let emailSent = false;
         try {
@@ -835,7 +837,7 @@ export const appRouter = router({
         if (invitation.status !== "pending") throw new TRPCError({ code: "BAD_REQUEST", message: "Can only resend pending invitations" });
 
         const company = await getCompanyById(ctx.companyId);
-        const origin = input.origin || "https://sanilite-ghfksw6x.manus.space";
+        const origin = input.origin || "http://localhost:3000";
         const inviteLink = `${origin}/invite?token=${invitation.token}`;
         const emailResult = await sendInvitationEmail({
           recipientEmail: invitation.email,
@@ -913,6 +915,11 @@ export const appRouter = router({
         bankAccount: z.string().optional(),
         deductionDetails: z.any().optional(),
         additionDetails: z.any().optional(),
+        payrollRunId: z.string().optional(),
+        taxDeduction: z.string().optional(),
+        companyPension: z.string().optional(),
+        holidayData: z.any().optional(),
+        balanceData: z.any().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const start = new Date(input.year, input.month - 1, 1);
@@ -928,8 +935,30 @@ export const appRouter = router({
           pension: input.pension || "0", atp: input.atp || "0",
           otherDeductions: input.otherDeductions || "0", otherAdditions: input.otherAdditions || "0",
           bankAccount: input.bankAccount || null,
-          deductionDetails: input.deductionDetails || null,
-          additionDetails: input.additionDetails || null,
+          deductionDetails: input.deductionDetails
+            ? typeof input.deductionDetails === "string"
+              ? JSON.parse(input.deductionDetails)
+              : input.deductionDetails
+            : null,
+          additionDetails: input.additionDetails
+            ? typeof input.additionDetails === "string"
+              ? JSON.parse(input.additionDetails)
+              : input.additionDetails
+            : null,
+          payrollRunId: input.payrollRunId || null,
+          availabilityDate: end,
+          taxDeduction: input.taxDeduction || "0",
+          companyPension: input.companyPension || "0",
+          holidayData: input.holidayData
+            ? typeof input.holidayData === "string"
+              ? JSON.parse(input.holidayData)
+              : input.holidayData
+            : null,
+          balanceData: input.balanceData
+            ? typeof input.balanceData === "string"
+              ? JSON.parse(input.balanceData)
+              : input.balanceData
+            : null,
           status: "draft",
         });
         return { success: true, payslipId: result.insertId };
@@ -950,28 +979,236 @@ export const appRouter = router({
     send: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       const payslip = await getPayslipById(input.id);
       if (!payslip) throw new TRPCError({ code: "NOT_FOUND" });
-      await updatePayslip(input.id, { status: "sent", sentAt: new Date() });
 
-      // Send email notification
-      try {
-        const employees = await getEmployeesByCompanyId(ctx.companyId);
-        const emp = employees.find((e: any) => e.id === payslip.employeeId) as any;
-        const company = await getCompanyById(ctx.companyId);
-        if (emp?.email) {
-          const { sendPayslipEmail } = await import("../email");
-          await sendPayslipEmail({
-            recipientEmail: emp.email,
-            employeeName: `${emp.firstName} ${emp.lastName}`,
-            companyName: company?.name || "Company",
-            month: payslip.month,
-            year: payslip.year,
-            netPay: payslip.netPay,
-            currency: payslip.currency || "DKK",
-          });
-        }
-      } catch (e) {
-        console.error("[Payslip] Email failed:", e);
+      // Fetch employee and company data
+      const emp = await getEmployeeById(payslip.employeeId);
+      if (!emp || emp.companyId !== ctx.companyId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Employee not found for this payslip." });
       }
+      const company = await getCompanyById(ctx.companyId);
+
+      try {
+        // Generate PDF using pdfkit
+        // @ts-ignore
+        const PDFKit = (await import("pdfkit")).default;
+        const doc = new PDFKit({ size: "A4", margin: 40 });
+        const chunks: Uint8Array[] = [];
+        doc.on("data", (c: Uint8Array) => chunks.push(c));
+
+        const ML = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+        const cur = payslip.currency || "DKK";
+        const gross = Number(payslip.grossSalary) || 0;
+        const net = Number(payslip.netPay) || 0;
+        const hours = Number(payslip.hoursWorked) || 160.33;
+        const rate = Number(payslip.hourlyRate) || (gross / hours);
+        const pen = Number(payslip.pension) || 0;
+        const am = Number(payslip.amContribution) || 0;
+        const tax = Number(payslip.aTax) || 0;
+        const atpVal = Number(payslip.atp) || 0;
+        const fmt = (n: number) => n.toLocaleString("da-DK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Helper: draw a row of text cells at fixed columns on same Y
+        const ROW_HEIGHT = 14;
+        const drawRow = (y: number, cols: { x: number; w: number; text: string; align?: string; font?: string; size?: number; color?: string }[]) => {
+          cols.forEach(col => {
+            doc.font(col.font || "Helvetica").fontSize(col.size || 8).fillColor(col.color || "#334155");
+            doc.text(col.text, col.x, y, { width: col.w, align: (col.align as any) || "left" });
+          });
+        };
+
+        // ─── Company Header ───
+        doc.font("Helvetica-Bold").fontSize(14).fillColor("#0f172a").text(company?.name || "Company", 40, 40);
+        doc.font("Helvetica").fontSize(9).fillColor("#64748b");
+        doc.text(company?.address || "", 40, 58);
+        doc.text(`CVR: ${(company as any)?.cvr || "—"}`, 40, 70);
+
+        // ─── Employee Header (right side) ───
+        doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a");
+        doc.text(`${emp?.firstName || ""} ${emp?.lastName || ""}`, 350, 40, { width: 205, align: "right" });
+        doc.font("Helvetica").fontSize(8).fillColor("#64748b");
+        doc.text(`CPR: ${(emp as any)?.metadata?.cprNumber || "—"}`, 350, 54, { width: 205, align: "right" });
+        doc.text(`EMP-${emp?.id} · ${(emp as any)?.department || "—"}`, 350, 65, { width: 205, align: "right" });
+
+        // ─── Meta box ───
+        let cy = 95;
+        doc.rect(40, cy, 515, 50).fill("#f8fafc").stroke("#e2e8f0");
+        cy += 8;
+        doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text(`Payslip — ${ML[payslip.month - 1]} ${payslip.year}`, 50, cy);
+        cy += 15;
+        doc.font("Helvetica").fontSize(8).fillColor("#64748b");
+        doc.text(`Salary period: ${new Date(payslip.salaryPeriodStart).toLocaleDateString("en-GB")} – ${new Date(payslip.salaryPeriodEnd).toLocaleDateString("en-GB")}`, 50, cy);
+        doc.text(`Account: ${payslip.bankAccount || (emp as any)?.metadata?.bankAccount || "—"}`, 320, cy);
+        cy += 12;
+        doc.text(`Availability: ${payslip.availabilityDate ? new Date(payslip.availabilityDate).toLocaleDateString("en-GB") : "—"}`, 50, cy);
+        doc.text(`Currency: ${cur}`, 320, cy);
+
+        // ─── Table ───
+        cy = 165;
+        // Table header background
+        doc.rect(40, cy, 515, ROW_HEIGHT + 2).fill("#1e293b");
+        drawRow(cy + 3, [
+          { x: 44, w: 200, text: "Text", font: "Helvetica-Bold", color: "#ffffff" },
+          { x: 244, w: 70, text: "Basis", align: "right", font: "Helvetica-Bold", color: "#ffffff" },
+          { x: 318, w: 55, text: "Rate", align: "right", font: "Helvetica-Bold", color: "#ffffff" },
+          { x: 377, w: 80, text: "Paid out", align: "right", font: "Helvetica-Bold", color: "#ffffff" },
+          { x: 461, w: 80, text: "Deducted", align: "right", font: "Helvetica-Bold", color: "#ffffff" },
+        ]);
+        cy += ROW_HEIGHT + 4;
+
+        const details: any[] = payslip.deductionDetails
+          ? (typeof payslip.deductionDetails === "string" ? JSON.parse(payslip.deductionDetails) : payslip.deductionDetails)
+          : null;
+
+        const tableRows: { text: string; basis?: string; rate?: string; paidOut?: number; deducted?: number }[] = details && details.length > 0
+          ? details
+          : [
+              { text: "Salary", basis: hours.toFixed(2), rate: rate.toFixed(2), paidOut: gross },
+              { text: "ATP", basis: hours.toFixed(2), deducted: atpVal },
+              { text: "Pension (employee)", basis: gross.toFixed(2), deducted: pen },
+              { text: "AM contribution", basis: (gross - pen).toFixed(2), rate: "8%", deducted: am },
+              { text: "A-tax", basis: (gross - pen - am).toFixed(2), rate: "38%", deducted: tax },
+            ];
+
+        tableRows.forEach((line, i) => {
+          if (i % 2 === 0) doc.rect(40, cy - 1, 515, ROW_HEIGHT).fill("#f8fafc");
+          drawRow(cy + 2, [
+            { x: 44, w: 200, text: line.text || "" },
+            { x: 244, w: 70, text: line.basis || "", align: "right" },
+            { x: 318, w: 55, text: line.rate || "", align: "right" },
+            { x: 377, w: 80, text: line.paidOut ? fmt(Number(line.paidOut)) : "", align: "right", color: "#047857" },
+            { x: 461, w: 80, text: line.deducted ? fmt(Number(line.deducted)) : "", align: "right", color: "#dc2626" },
+          ]);
+          cy += ROW_HEIGHT;
+        });
+
+        // ─── Net pay row ───
+        cy += 4;
+        doc.rect(40, cy, 515, 22).fill("#f0fdfa");
+        doc.moveTo(40, cy).lineTo(555, cy).strokeColor("#0d9488").lineWidth(1.5).stroke();
+        doc.font("Helvetica-Bold").fontSize(11).fillColor("#0d9488");
+        doc.text("Net pay", 44, cy + 5);
+        doc.text(`${cur} ${fmt(net)}`, 377, cy + 5, { width: 164, align: "right" });
+
+        // ─── Balance Section ───
+        cy += 38;
+        doc.font("Helvetica-Bold").fontSize(9).fillColor("#334155").text("Balance", 40, cy);
+        cy += 14;
+        drawRow(cy, [
+          { x: 44, w: 180, text: "", font: "Helvetica-Bold" },
+          { x: 350, w: 80, text: "Period", align: "right", font: "Helvetica-Bold" },
+          { x: 440, w: 100, text: "Year to date", align: "right", font: "Helvetica-Bold" },
+        ]);
+        cy += ROW_HEIGHT;
+        const balData = [
+          ["AM income base", fmt(gross - pen), fmt((gross - pen) * payslip.month)],
+          ["A-tax", fmt(tax), fmt(tax * payslip.month)],
+          ["AM contribution", fmt(am), fmt(am * payslip.month)],
+          ["ATP", fmt(atpVal), fmt(atpVal * payslip.month)],
+          ["Pension (employee)", fmt(pen), fmt(pen * payslip.month)],
+          ["Hours", hours.toFixed(2), (hours * payslip.month).toFixed(2)],
+        ];
+        balData.forEach(([label, period, ytd]) => {
+          drawRow(cy, [
+            { x: 44, w: 180, text: label },
+            { x: 350, w: 80, text: period, align: "right" },
+            { x: 440, w: 100, text: ytd, align: "right" },
+          ]);
+          cy += ROW_HEIGHT - 2;
+        });
+
+        // ─── Footer ───
+        cy += 20;
+        doc.font("Helvetica").fontSize(7).fillColor("#94a3b8");
+        doc.text(`Generated by SANI · ${company?.name || "Company"} · ${new Date().toLocaleDateString("en-GB")}`, 40, cy, { width: 515, align: "center" });
+
+        doc.end();
+
+        // Wait for PDF to finish
+        await new Promise<void>((resolve, reject) => {
+          doc.once("end", () => resolve());
+          doc.once("error", (err: any) => reject(err));
+        });
+
+        const pdfBuffer = Buffer.concat(chunks as any);
+        let pdfUrl: string | null = null;
+
+        try {
+          const { storagePut } = await import("./storage");
+          const fileKey = `company-${ctx.companyId}/payslips/payslip-${input.id}-${payslip.month}-${payslip.year}.pdf`;
+          const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
+          pdfUrl = url;
+          await updatePayslip(input.id, { pdfUrl: url });
+        } catch (err) {
+          console.error("[Payslip] PDF upload failed:", err);
+        }
+
+        if (!emp?.email) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Employee has no email address configured." });
+        }
+
+        const { sendPayslipEmail } = await import("./email");
+        const emailResult = await sendPayslipEmail({
+          recipientEmail: emp.email,
+          employeeName: `${emp.firstName} ${emp.lastName}`,
+          companyName: company?.name || "Company",
+          month: payslip.month,
+          year: payslip.year,
+          netPay: payslip.netPay,
+          currency: payslip.currency || "DKK",
+          pdfBuffer,
+          pdfFileName: `Payslip-${payslip.month}-${payslip.year}.pdf`,
+          pdfUrl: pdfUrl || undefined,
+        });
+
+        if (!emailResult.success) {
+          console.error("[Payslip] Email not delivered:", emailResult.error);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: emailResult.error || "Failed to send payslip email." });
+        }
+
+        await updatePayslip(input.id, {
+          status: "sent",
+          sentAt: new Date(),
+          ...(pdfUrl ? { pdfUrl } : {}),
+          ...(emailResult.messageId ? { emailMessageId: emailResult.messageId } : {}),
+        });
+        return { success: true, pdfUrl, messageId: emailResult.messageId };
+      } catch (err: any) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("[Payslip] Send failed:", err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: message || "Failed to send payslip" });
+      }
+    }),
+    delete: companyProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      const payslip = await getPayslipById(input.id);
+      if (!payslip || payslip.companyId !== ctx.companyId) throw new TRPCError({ code: "NOT_FOUND" });
+      await deletePayslip(input.id);
+      return { success: true };
+    }),
+    update: companyProcedure.input(z.object({
+      id: z.number(),
+      grossSalary: z.string().optional(),
+      netPay: z.string().optional(),
+      hoursWorked: z.string().optional(),
+      hourlyRate: z.string().optional(),
+      amContribution: z.string().optional(),
+      aTax: z.string().optional(),
+      pension: z.string().optional(),
+      atp: z.string().optional(),
+      otherDeductions: z.string().optional(),
+      otherAdditions: z.string().optional(),
+      deductionDetails: z.any().optional(),
+      taxDeduction: z.string().optional(),
+      companyPension: z.string().optional(),
+      status: z.enum(["draft", "validated"]).optional(),
+    })).mutation(async ({ input, ctx }) => {
+      const payslip = await getPayslipById(input.id);
+      if (!payslip || payslip.companyId !== ctx.companyId) throw new TRPCError({ code: "NOT_FOUND" });
+      const { id, deductionDetails, ...rest } = input;
+      const updateData: any = { ...rest };
+      if (deductionDetails !== undefined) {
+        updateData.deductionDetails = typeof deductionDetails === "string" ? JSON.parse(deductionDetails) : deductionDetails;
+      }
+      await updatePayslip(id, updateData);
       return { success: true };
     }),
   }),

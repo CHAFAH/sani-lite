@@ -1,6 +1,5 @@
-import { getLoginUrl } from "@/const";
 import { useState } from "react";
-import { Loader2, Shield, Globe, Users, ArrowRight, Mail, Eye, EyeOff } from "lucide-react";
+import { Loader2, Shield, Globe, Users, ArrowRight, Mail, Eye, EyeOff, Lock } from "lucide-react";
 import { SaniLogo } from "@/components/MarketingLayout";
 import { toast } from "sonner";
 
@@ -9,28 +8,39 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [name, setName] = useState("");
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) { toast.error("Please enter email and password"); return; }
+    if (mode === "register" && password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     setLoading(true);
     try {
-      const res = await fetch("/api/email-login", {
+      const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
+      const body: any = { email, password };
+      if (mode === "register" && name) body.name = name;
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (res.ok && data.redirect) {
         window.location.href = data.redirect;
       } else {
-        toast.error(data.error || "Invalid credentials");
+        toast.error(data.error || "Authentication failed");
         setLoading(false);
       }
     } catch {
-      toast.error("Login failed. Try again.");
+      toast.error("Something went wrong. Try again.");
       setLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = "/api/auth/google";
   };
 
   return (
@@ -99,15 +109,18 @@ export default function Login() {
 
           {/* Welcome text */}
           <div className="mb-8">
-            <h2 className="text-2xl font-serif font-normal text-slate-900 mb-2">Sign in</h2>
-            <p className="text-slate-500 text-sm">Choose your preferred sign-in method</p>
+            <h2 className="text-2xl font-serif font-normal text-slate-900 mb-2">
+              {mode === "login" ? "Sign in" : "Create account"}
+            </h2>
+            <p className="text-slate-500 text-sm">
+              {mode === "login" ? "Choose your preferred sign-in method" : "Get started with your SANI account"}
+            </p>
           </div>
 
-          {/* Social Login Buttons */}
+          {/* Google */}
           <div className="space-y-3 mb-6">
-            {/* Google */}
-            <a
-              href={getLoginUrl() !== "#" ? getLoginUrl() : "/api/dev-login"}
+            <button
+              onClick={handleGoogleLogin}
               className="w-full flex items-center justify-center gap-3 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-3 px-4 rounded-xl transition-all"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -117,26 +130,6 @@ export default function Login() {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
               <span className="text-sm">Continue with Google</span>
-            </a>
-
-            {/* Apple */}
-            <button
-              onClick={() => toast.info("Apple Sign-In coming soon")}
-              className="w-full flex items-center justify-center gap-3 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-3 px-4 rounded-xl transition-all"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-              </svg>
-              <span className="text-sm">Continue with Apple</span>
-            </button>
-
-            {/* SSO */}
-            <button
-              onClick={() => toast.info("Contact your admin for SSO configuration")}
-              className="w-full flex items-center justify-center gap-3 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-3 px-4 rounded-xl transition-all"
-            >
-              <Shield className="w-5 h-5 text-slate-500" />
-              <span className="text-sm">Sign in with SSO</span>
             </button>
           </div>
 
@@ -146,12 +139,24 @@ export default function Login() {
               <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-[#FEFCF8] px-4 text-slate-400">or sign in with email</span>
+              <span className="bg-[#FEFCF8] px-4 text-slate-400">or continue with email</span>
             </div>
           </div>
 
           {/* Email/Password Form */}
-          <form onSubmit={handleEmailLogin} className="space-y-4">
+          <form onSubmit={handleEmailAuth} className="space-y-4">
+            {mode === "register" && (
+              <div>
+                <label className="text-xs font-medium text-slate-600 mb-1.5 block">Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  className="w-full h-11 pl-4 pr-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white"
+                />
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-slate-600 mb-1.5 block">Email</label>
               <div className="relative">
@@ -168,35 +173,46 @@ export default function Login() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-slate-600">Password</label>
-                <button type="button" className="text-xs text-teal-600 hover:underline">Forgot password?</button>
+                {mode === "login" && (
+                  <button type="button" className="text-xs text-teal-600 hover:underline">Forgot password?</button>
+                )}
               </div>
               <div className="relative">
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full h-11 pl-4 pr-10 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white"
+                  placeholder={mode === "register" ? "Create a strong password" : "Enter your password"}
+                  className="w-full h-11 pl-10 pr-10 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white"
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
+
+            {/* Password policy for register */}
+            {mode === "register" && password.length > 0 && (
+              <PasswordPolicy password={password} />
+            )}
+
             <button
               type="submit"
               disabled={loading}
               className="w-full h-11 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              Sign in
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+              {mode === "login" ? "Sign in" : "Create account"}
             </button>
           </form>
 
-          {/* Sign up link */}
+          {/* Toggle mode */}
           <p className="text-sm text-slate-500 text-center mt-6">
-            Don't have an account?{" "}
-            <a href="/api/dev-login?redirect=/signup" className="text-teal-600 font-medium hover:underline">Sign up</a>
+            {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+            <button onClick={() => setMode(mode === "login" ? "register" : "login")} className="text-teal-600 font-medium hover:underline">
+              {mode === "login" ? "Sign up" : "Sign in"}
+            </button>
           </p>
 
           {/* Footer */}
@@ -210,6 +226,33 @@ export default function Login() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PasswordPolicy({ password }: { password: string }) {
+  const checks = [
+    { label: "At least 8 characters", met: password.length >= 8 },
+    { label: "Contains uppercase letter", met: /[A-Z]/.test(password) },
+    { label: "Contains lowercase letter", met: /[a-z]/.test(password) },
+    { label: "Contains a number", met: /[0-9]/.test(password) },
+    { label: "Contains special character (!@#$...)", met: /[^A-Za-z0-9]/.test(password) },
+  ];
+
+  return (
+    <div className="bg-slate-50 rounded-lg p-3 space-y-1.5">
+      {checks.map((check) => (
+        <div key={check.label} className="flex items-center gap-2 text-xs">
+          <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${check.met ? "bg-teal-500" : "bg-slate-200"}`}>
+            {check.met && (
+              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span className={check.met ? "text-teal-700" : "text-slate-500"}>{check.label}</span>
+        </div>
+      ))}
     </div>
   );
 }

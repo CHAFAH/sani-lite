@@ -47,7 +47,7 @@ import DemoMode from "@/pages/DemoMode";
 
 // Company Onboarding
 import CompanyOnboarding from "./pages/app/CompanyOnboarding";
-import InviteAcceptPage from "./pages/app/InviteAcceptPage";
+import InviteAcceptPage from "./pages/InviteAcceptancePage";
 
 // Admin Platform pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";

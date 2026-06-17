@@ -297,12 +297,35 @@ export async function sendWelcomeEmail(
 
 const MONTHS_NAME = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-export async function sendPayslipEmail({ recipientEmail, employeeName, companyName, month, year, netPay, currency }: {
-  recipientEmail: string; employeeName: string; companyName: string; month: number; year: number; netPay: string; currency: string;
+export async function sendPayslipEmail({
+  recipientEmail,
+  employeeName,
+  companyName,
+  month,
+  year,
+  netPay,
+  currency,
+  pdfUrl,
+  pdfBuffer,
+  pdfFileName,
+}: {
+  recipientEmail: string;
+  employeeName: string;
+  companyName: string;
+  month: number;
+  year: number;
+  netPay: string;
+  currency: string;
+  pdfBuffer?: Buffer;
+  pdfFileName?: string;
+  pdfUrl?: string;
 }) {
   try {
     const resend = getResendClient();
-    await resend.emails.send({
+    const attachments = pdfBuffer
+      ? [{ filename: pdfFileName || `Payslip-${month}-${year}.pdf`, content: pdfBuffer, contentType: "application/pdf" }]
+      : undefined;
+    const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: recipientEmail,
       subject: `Your payslip for ${MONTHS_NAME[month - 1]} ${year} is ready — ${companyName}`,
@@ -320,6 +343,7 @@ export async function sendPayslipEmail({ recipientEmail, employeeName, companyNa
               <p style="color:#0D9488;font-size:24px;font-weight:bold;margin:0">${currency} ${Number(netPay).toLocaleString()}</p>
             </div>
             <p style="color:#64748b;font-size:13px;margin:0">Log in to your SANI account to view the full breakdown and download the PDF.</p>
+            ${pdfUrl ? `<p style="color:#64748b;font-size:13px;margin:12px 0 0;">If you prefer, download your payslip directly: <a href="${pdfUrl}" style="color:#0D9488;">Download PDF</a></p>` : ""}
           </div>
           <div style="text-align:center">
             <a href="http://localhost:3000/employee/payslips" style="display:inline-block;background:#0D9488;color:white;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px">View Payslip →</a>
@@ -327,9 +351,15 @@ export async function sendPayslipEmail({ recipientEmail, employeeName, companyNa
           <p style="text-align:center;color:#94a3b8;font-size:11px;margin-top:24px">${companyName} · Powered by SANI</p>
         </div>
       `,
+      attachments,
     });
-    console.log(`[Email] Payslip email sent to ${recipientEmail}`);
-    return { success: true };
+    if (error) {
+      console.error("[Email] Payslip email failed:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`[Email] Payslip email sent to ${recipientEmail} (${data?.id})`);
+    return { success: true, messageId: data?.id };
   } catch (err: any) {
     console.error("[Email] Payslip email failed:", err?.message || err);
     return { success: false, error: err?.message };

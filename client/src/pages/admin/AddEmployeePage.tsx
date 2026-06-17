@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import AdminLayout from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,99 +12,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Plus, Loader2, Mail } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Mail, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { COUNTRIES } from "@shared/countries";
 
-interface EditableDropdownProps {
-  label: string;
-  value: string;
-  options: string[];
-  onValueChange: (value: string) => void;
-  onAddNew: (newValue: string) => void;
-  placeholder?: string;
-}
 
-function EditableDropdown({
-  label,
-  value,
-  options,
-  onValueChange,
-  onAddNew,
-  placeholder,
-}: EditableDropdownProps) {
-  const [showAddNew, setShowAddNew] = useState(false);
-  const [newValue, setNewValue] = useState("");
-
-  return (
-    <div className="space-y-2">
-      <Label className="text-sm font-medium">{label}</Label>
-      {!showAddNew ? (
-        <div className="flex gap-2">
-          <Select value={value} onValueChange={onValueChange}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder={placeholder || `Select ${label.toLowerCase()}`} />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((opt) => (
-                <SelectItem key={opt} value={opt}>
-                  {opt}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAddNew(true)}
-            className="px-3"
-          >
-            <Plus size={16} />
-          </Button>
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <Input
-            placeholder={`New ${label.toLowerCase()}`}
-            value={newValue}
-            onChange={(e) => setNewValue(e.target.value)}
-            autoFocus
-          />
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => {
-              if (newValue.trim()) {
-                onAddNew(newValue.trim());
-                setNewValue("");
-                setShowAddNew(false);
-              }
-            }}
-          >
-            Add
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setShowAddNew(false);
-              setNewValue("");
-            }}
-          >
-            Cancel
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
+const CURRENCIES = [
+  { code: "DKK", label: "DKK - Danish Krone" },
+  { code: "USD", label: "USD - US Dollar" },
+  { code: "EUR", label: "EUR - Euro" },
+  { code: "GBP", label: "GBP - British Pound" },
+  { code: "SEK", label: "SEK - Swedish Krona" },
+  { code: "NOK", label: "NOK - Norwegian Krone" },
+  { code: "CHF", label: "CHF - Swiss Franc" },
+  { code: "CAD", label: "CAD - Canadian Dollar" },
+  { code: "AUD", label: "AUD - Australian Dollar" },
+  { code: "JPY", label: "JPY - Japanese Yen" },
+  { code: "CNY", label: "CNY - Chinese Yuan" },
+  { code: "INR", label: "INR - Indian Rupee" },
+  { code: "BRL", label: "BRL - Brazilian Real" },
+  { code: "PLN", label: "PLN - Polish Zloty" },
+  { code: "CZK", label: "CZK - Czech Koruna" },
+  { code: "ZAR", label: "ZAR - South African Rand" },
+  { code: "NGN", label: "NGN - Nigerian Naira" },
+  { code: "AED", label: "AED - UAE Dirham" },
+  { code: "SGD", label: "SGD - Singapore Dollar" },
+  { code: "NZD", label: "NZD - New Zealand Dollar" },
+  { code: "MXN", label: "MXN - Mexican Peso" },
+  { code: "PHP", label: "PHP - Philippine Peso" },
+  { code: "THB", label: "THB - Thai Baht" },
+];
 
 export default function AddEmployeePage() {
   const [, setLocation] = useLocation();
   const { data: employees = [] } = trpc.employee.list.useQuery();
   const createMut = trpc.employee.create.useMutation({
-    onSuccess: (newEmployee) => {
+    onSuccess: () => {
       toast.success("Employee created and invitation sent!");
       setLocation("/admin/employees");
     },
@@ -114,22 +56,13 @@ export default function AddEmployeePage() {
     },
   });
 
-  // Get unique values for dropdowns
   const departments = useMemo(
-    () => Array.from(new Set(employees.map((e: any) => e.department).filter(Boolean))),
+    () => Array.from(new Set(employees.map((e: any) => e.department).filter(Boolean))).sort(),
     [employees]
   );
 
   const positions = useMemo(
-    () => Array.from(new Set(employees.map((e: any) => e.position).filter(Boolean))),
-    [employees]
-  );
-
-  const managers = useMemo(
-    () =>
-      employees
-        .filter((e: any) => e.role === "manager" || e.role === "admin")
-        .map((e: any) => `${e.firstName} ${e.lastName}`),
+    () => Array.from(new Set(employees.map((e: any) => e.position).filter(Boolean))).sort(),
     [employees]
   );
 
@@ -144,40 +77,68 @@ export default function AddEmployeePage() {
     department: "",
     employmentType: "full_time",
     salary: "",
-    currency: "USD",
-    role: "employee",
-    manager: "",
+    currency: "DKK",
+    startDate: "",
+    managerId: "",
   });
 
   const [newDepts, setNewDepts] = useState<string[]>([]);
   const [newPositions, setNewPositions] = useState<string[]>([]);
+  const [countrySearch, setCountrySearch] = useState("");
 
-  const handleAddDepartment = (dept: string) => {
-    setNewDepts([...newDepts, dept]);
-    setForm({ ...form, department: dept });
-  };
+  const DEFAULT_DEPARTMENTS = [
+    "Engineering", "Product", "Design", "Marketing", "Sales", "Finance", "Human Resources",
+    "Operations", "Customer Success", "Legal", "IT", "Data", "Research", "Quality Assurance",
+    "Business Development", "Administration", "Supply Chain", "Logistics", "Procurement",
+    "Communications", "Security", "Compliance", "Facilities", "Training",
+  ];
 
-  const handleAddPosition = (pos: string) => {
-    setNewPositions([...newPositions, pos]);
-    setForm({ ...form, position: pos });
-  };
+  const DEFAULT_POSITIONS = [
+    "Software Engineer", "Senior Software Engineer", "Staff Engineer", "Principal Engineer",
+    "Frontend Developer", "Backend Developer", "Full Stack Developer", "DevOps Engineer",
+    "Engineering Manager", "VP of Engineering", "CTO",
+    "Product Manager", "Senior Product Manager", "Head of Product", "CPO",
+    "UX Designer", "UI Designer", "Product Designer", "Design Lead", "Head of Design",
+    "Data Analyst", "Data Scientist", "Data Engineer", "ML Engineer",
+    "Marketing Manager", "Content Strategist", "Growth Manager", "CMO",
+    "Sales Representative", "Account Executive", "Sales Manager", "VP of Sales",
+    "Customer Success Manager", "Support Engineer", "Support Lead",
+    "HR Manager", "HR Business Partner", "Recruiter", "People Operations", "CHRO",
+    "Finance Manager", "Accountant", "Financial Analyst", "CFO", "Controller",
+    "Operations Manager", "COO", "Project Manager", "Program Manager",
+    "Legal Counsel", "Compliance Officer", "General Counsel",
+    "Office Manager", "Executive Assistant", "Administrative Assistant",
+    "QA Engineer", "QA Lead", "Test Automation Engineer",
+    "Security Engineer", "CISO", "IT Administrator", "System Administrator",
+    "Business Analyst", "Consultant", "Intern", "CEO",
+  ];
 
-  const handleCreate = async () => {
+  const allDepartments = useMemo(
+    () => Array.from(new Set([...DEFAULT_DEPARTMENTS, ...departments, ...newDepts])).sort(),
+    [departments, newDepts]
+  );
+  const allPositions = useMemo(
+    () => Array.from(new Set([...DEFAULT_POSITIONS, ...positions, ...newPositions])).sort(),
+    [positions, newPositions]
+  );
+
+  const filteredCountries = useMemo(
+    () => {
+      const term = countrySearch.toLowerCase();
+      return term ? COUNTRIES.filter(c => c.name.toLowerCase().includes(term)) : COUNTRIES;
+    },
+    [countrySearch]
+  );
+
+  const handleCreate = () => {
     if (!form.firstName || !form.lastName || !form.email) {
-      toast.error("Please fill in all required fields");
+      toast.error("Please fill in first name, last name, and email");
       return;
     }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       toast.error("Please enter a valid email address");
       return;
     }
-
-    const selectedManager = employees.find(
-      (e: any) => `${e.firstName} ${e.lastName}` === form.manager
-    );
 
     createMut.mutate({
       firstName: form.firstName,
@@ -188,250 +149,198 @@ export default function AddEmployeePage() {
       city: form.city || undefined,
       position: form.position || undefined,
       department: form.department || undefined,
-      employmentType: form.employmentType,
+      employmentType: form.employmentType as any,
       salary: form.salary ? String(parseFloat(form.salary)) : undefined,
       currency: form.currency,
-      role: form.role as any,
-      managerId: selectedManager?.id || undefined,
-      status: "invited",
-    } as any);
+      startDate: form.startDate || undefined,
+      managerId: form.managerId && form.managerId !== "none" ? parseInt(form.managerId) : undefined,
+    });
   };
-
-  const allDepartments = Array.from(new Set([...departments, ...newDepts]));
-  const allPositions = Array.from(new Set([...positions, ...newPositions]));
 
   return (
     <AdminLayout>
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/admin/employees")}
-          >
-            <ArrowLeft size={16} className="mr-2" />
-            Back
+          <Button variant="ghost" size="sm" onClick={() => setLocation("/admin/employees")}>
+            <ArrowLeft size={16} className="mr-2" /> Back
           </Button>
           <h1 className="text-2xl font-bold text-slate-900">Add New Employee</h1>
         </div>
 
         {/* Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail size={20} />
-              Employee Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Personal Information */}
-            <div>
-              <h3 className="font-semibold text-slate-900 mb-4">Personal Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-sm font-medium">
-                    First Name *
-                  </Label>
-                  <Input
-                    id="firstName"
-                    value={form.firstName}
-                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                    placeholder="John"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-sm font-medium">
-                    Last Name *
-                  </Label>
-                  <Input
-                    id="lastName"
-                    value={form.lastName}
-                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                    placeholder="Doe"
-                  />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
-                    Company Email * (Invitation will be sent here)
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="john@company.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-sm font-medium">
-                    Phone
-                  </Label>
-                  <Input
-                    id="phone"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="+1 (555) 000-0000"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city" className="text-sm font-medium">
-                    City
-                  </Label>
-                  <Input
-                    id="city"
-                    value={form.city}
-                    onChange={(e) => setForm({ ...form, city: e.target.value })}
-                    placeholder="San Francisco"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="country" className="text-sm font-medium">
-                    Country
-                  </Label>
-                  <Input
-                    id="country"
-                    value={form.country}
-                    onChange={(e) => setForm({ ...form, country: e.target.value })}
-                    placeholder="United States"
-                  />
-                </div>
-              </div>
-            </div>
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
+            <UserPlus size={18} className="text-teal-600" />
+            <h2 className="font-semibold text-slate-900">Employee Information</h2>
+          </div>
 
-            {/* Job Information */}
-            <div>
-              <h3 className="font-semibold text-slate-900 mb-4">Job Information</h3>
+          <div className="p-6 space-y-8">
+            {/* Personal Information */}
+            <section>
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Personal Information</h3>
               <div className="grid grid-cols-2 gap-4">
-                <EditableDropdown
-                  label="Department"
-                  value={form.department}
-                  options={allDepartments}
-                  onValueChange={(value) => setForm({ ...form, department: value })}
-                  onAddNew={handleAddDepartment}
-                  placeholder="Select department"
-                />
-                <EditableDropdown
-                  label="Position"
-                  value={form.position}
-                  options={allPositions}
-                  onValueChange={(value) => setForm({ ...form, position: value })}
-                  onAddNew={handleAddPosition}
-                  placeholder="Select position"
-                />
-                <div className="space-y-2">
-                  <Label htmlFor="employment-type" className="text-sm font-medium">
-                    Employment Type
-                  </Label>
-                  <Select value={form.employmentType} onValueChange={(value) => setForm({ ...form, employmentType: value })}>
-                    <SelectTrigger id="employment-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="full_time">Full Time</SelectItem>
-                      <SelectItem value="part_time">Part Time</SelectItem>
-                      <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="intern">Intern</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">First Name *</Label>
+                  <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="John" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role" className="text-sm font-medium">
-                    Role
-                  </Label>
-                  <Select value={form.role} onValueChange={(value) => setForm({ ...form, role: value })}>
-                    <SelectTrigger id="role">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="employee">Employee</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Last Name *</Label>
+                  <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} placeholder="Doe" />
                 </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium">Manager</Label>
-                  <Select value={form.manager} onValueChange={(value) => setForm({ ...form, manager: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select manager" />
-                    </SelectTrigger>
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Work Email * (invitation sent here)</Label>
+                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@company.com" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Phone</Label>
+                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+45 12 34 56 78" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">City</Label>
+                  <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Copenhagen" />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Country</Label>
+                  <Select value={form.country} onValueChange={(v) => setForm({ ...form, country: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No Manager</SelectItem>
-                      {managers.map((manager) => (
-                        <SelectItem key={manager} value={manager}>
-                          {manager}
-                        </SelectItem>
+                      <div className="px-2 pb-2 sticky top-0 bg-white">
+                        <Input placeholder="Search country..." value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} className="h-8 text-sm" />
+                      </div>
+                      {filteredCountries.map((c) => (
+                        <SelectItem key={c.code} value={c.name}>{c.flag} {c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-            </div>
+            </section>
+
+            {/* Job Information */}
+            <section>
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Job Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Department</Label>
+                  <div className="flex gap-2">
+                    <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Select department" /></SelectTrigger>
+                      <SelectContent>
+                        {allDepartments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <AddNewButton onAdd={(v) => { setNewDepts([...newDepts, v]); setForm({ ...form, department: v }); }} />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Position / Title</Label>
+                  <div className="flex gap-2">
+                    <Select value={form.position} onValueChange={(v) => setForm({ ...form, position: v })}>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Select position" /></SelectTrigger>
+                      <SelectContent>
+                        {allPositions.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <AddNewButton onAdd={(v) => { setNewPositions([...newPositions, v]); setForm({ ...form, position: v }); }} />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Employment Type</Label>
+                  <Select value={form.employmentType} onValueChange={(v) => setForm({ ...form, employmentType: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full_time">Full Time</SelectItem>
+                      <SelectItem value="part_time">Part Time</SelectItem>
+                      <SelectItem value="contract">Contract</SelectItem>
+                      <SelectItem value="temporary">Temporary</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Start Date</Label>
+                  <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Reports To (Manager)</Label>
+                  <Select value={form.managerId} onValueChange={(v) => setForm({ ...form, managerId: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select manager" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Manager</SelectItem>
+                      {employees.map((e: any) => (
+                        <SelectItem key={e.id} value={String(e.id)}>
+                          {e.firstName} {e.lastName} {e.position ? `— ${e.position}` : ""} {e.department ? `(${e.department})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-slate-400 mt-1">This will sync to the org chart</p>
+                </div>
+              </div>
+            </section>
 
             {/* Compensation */}
-            <div>
-              <h3 className="font-semibold text-slate-900 mb-4">Compensation</h3>
+            <section>
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Compensation</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="salary" className="text-sm font-medium">
-                    Salary
-                  </Label>
-                  <Input
-                    id="salary"
-                    type="text"
-                    value={form.salary}
-                    onChange={(e) => setForm({ ...form, salary: e.target.value })}
-                    placeholder="50000"
-                  />
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Monthly Salary</Label>
+                  <Input type="text" value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} placeholder="45000" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currency" className="text-sm font-medium">
-                    Currency
-                  </Label>
-                  <Select value={form.currency} onValueChange={(value) => setForm({ ...form, currency: value })}>
-                    <SelectTrigger id="currency">
-                      <SelectValue />
-                    </SelectTrigger>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">Currency</Label>
+                  <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                      <SelectItem value="CAD">CAD</SelectItem>
-                      <SelectItem value="AUD">AUD</SelectItem>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Info Box */}
+            {/* Info */}
             <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
               <p className="text-sm text-teal-900">
-                <strong>Email Invitation:</strong> An invitation email will be sent to <strong>{form.email || "the employee email"}</strong> with a link to accept and join the company. They will then be taken to their employee profile to complete their setup.
+                <Mail size={14} className="inline mr-1.5 -mt-0.5" />
+                <strong>Invitation:</strong> An email will be sent to <strong>{form.email || "the employee"}</strong> with a link to create their password and join the company.
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-6 border-t">
-              <Button
-                onClick={handleCreate}
-                disabled={createMut.isPending}
-                className="bg-teal-600 hover:bg-teal-700"
-              >
-                {createMut.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+            {/* Actions */}
+            <div className="flex gap-3 pt-4 border-t border-slate-100">
+              <Button onClick={handleCreate} disabled={createMut.isPending} className="bg-teal-600 hover:bg-teal-700 text-white px-6">
+                {createMut.isPending ? <Loader2 size={16} className="mr-2 animate-spin" /> : <UserPlus size={16} className="mr-2" />}
                 Create Employee & Send Invite
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/admin/employees")}
-              >
-                Cancel
-              </Button>
+              <Button variant="outline" onClick={() => setLocation("/admin/employees")}>Cancel</Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </AdminLayout>
+  );
+}
+
+function AddNewButton({ onAdd }: { onAdd: (value: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+
+  if (!open) {
+    return (
+      <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => setOpen(true)}>
+        <Plus size={14} />
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex gap-1">
+      <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="New..." className="h-9 w-28 text-sm" autoFocus onKeyDown={(e) => { if (e.key === "Enter" && value.trim()) { onAdd(value.trim()); setValue(""); setOpen(false); } }} />
+      <Button type="button" size="sm" className="h-9 px-2 text-xs" onClick={() => { if (value.trim()) { onAdd(value.trim()); setValue(""); setOpen(false); } }}>Add</Button>
+      <Button type="button" variant="ghost" size="sm" className="h-9 px-2 text-xs" onClick={() => { setOpen(false); setValue(""); }}>✕</Button>
+    </div>
   );
 }
