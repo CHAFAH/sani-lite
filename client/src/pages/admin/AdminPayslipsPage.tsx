@@ -325,7 +325,7 @@ export default function AdminPayslipsPage() {
           const rate = Number(p.hourlyRate) || (gross / hours);
           return (
             <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center overflow-y-auto py-8">
-              <div className="bg-white w-full max-w-[700px] rounded-xl shadow-2xl mx-4">
+              <div className="bg-white w-full max-w-[620px] rounded-xl shadow-2xl mx-4">
                 {/* Toolbar */}
                 <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 sticky top-0 bg-white rounded-t-xl z-10">
                   <h3 className="font-bold text-slate-900">Payslip — {MONTHS[p.month - 1]} {p.year}</h3>
@@ -336,7 +336,7 @@ export default function AdminPayslipsPage() {
                 </div>
 
                 {/* Document */}
-                <div className="p-8 text-sm font-mono" id="payslip-doc">
+                <div className="p-6 sm:p-8 text-[11px] sm:text-sm font-mono leading-tight" id="payslip-doc">
                   {/* Company + Employee Header */}
                   <div className="flex justify-between mb-6">
                     <div>
@@ -362,7 +362,7 @@ export default function AdminPayslipsPage() {
                   </div>
 
                   {/* Payslip Table */}
-                  <table className="w-full text-xs border border-slate-200 rounded-lg overflow-hidden">
+                  <table className="w-full text-[10px] sm:text-xs border border-slate-200 rounded-lg overflow-hidden">
                     <thead>
                       <tr className="bg-slate-800 text-white">
                         <th className="text-left py-2 px-3">Text</th>
