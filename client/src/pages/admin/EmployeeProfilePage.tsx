@@ -22,12 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const COUNTRIES = [
-  "United States", "United Kingdom", "Canada", "Germany", "France", "Australia",
-  "India", "Japan", "Brazil", "Mexico", "Nigeria", "South Africa", "Kenya",
-  "UAE", "Saudi Arabia", "Singapore", "Netherlands", "Sweden", "Switzerland",
-  "Spain", "Italy", "China", "South Korea", "Denmark", "Poland", "Ireland",
-];
+import { COUNTRIES } from "@shared/countries";
 const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "INR", "JPY", "BRL", "DKK", "SEK", "SGD", "CHF", "NGN", "ZAR", "KES", "AED", "SAR", "CNY", "KRW"];
 const EMPLOYMENT_TYPES = [
   { value: "full_time", label: "Full Time" },
@@ -184,7 +179,15 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
   );
 
   // Personal form (employee-editable)
-  const [personalForm, setPersonalForm] = useState({ phone: "", city: "", country: "", pronouns: "" });
+  const [personalForm, setPersonalForm] = useState({
+    phone: "", city: "", country: "", pronouns: "",
+    dob: "", gender: "", nationality: "", maritalStatus: "",
+    personalEmail: "", mobile: "",
+    street: "", postalCode: "", region: "",
+    bio: "", interests: "", skills: "", languages: "",
+    emergencyName: "", emergencyRelation: "", emergencyPhone: "", emergencyEmail: "",
+    cprNumber: "", bankAccount: "",
+  });
   // Admin form (admin-editable)
   const [adminForm, setAdminForm] = useState({
     firstName: "", lastName: "", position: "", department: "",
@@ -197,6 +200,19 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
       setPersonalForm({
         phone: emp.phone || "", city: emp.city || "",
         country: emp.country || "", pronouns: emp.metadata?.pronouns || "",
+        dob: emp.metadata?.dob || "", gender: emp.metadata?.gender || "",
+        nationality: emp.metadata?.nationality || emp.country || "",
+        maritalStatus: emp.metadata?.maritalStatus || "",
+        personalEmail: emp.metadata?.personalEmail || "", mobile: emp.metadata?.mobile || "",
+        street: emp.metadata?.street || "", postalCode: emp.metadata?.postalCode || "",
+        region: emp.metadata?.region || "",
+        bio: emp.metadata?.bio || "", interests: emp.metadata?.interests || "",
+        skills: emp.metadata?.skills || "", languages: emp.metadata?.languages || "",
+        emergencyName: emp.metadata?.emergencyName || "",
+        emergencyRelation: emp.metadata?.emergencyRelation || "",
+        emergencyPhone: emp.metadata?.emergencyPhone || "",
+        emergencyEmail: emp.metadata?.emergencyEmail || "",
+        cprNumber: emp.metadata?.cprNumber || "", bankAccount: emp.metadata?.bankAccount || "",
       });
     }
     if (editingSection === "admin" && emp) {
@@ -302,7 +318,7 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
 
   const departmentOptions = departments.map((d) => ({ value: d, label: d }));
   const positionOptions = positions.map((p) => ({ value: p, label: p }));
-  const countryOptions = COUNTRIES.map((c) => ({ value: c, label: c }));
+  const countryOptions = COUNTRIES.map((c) => ({ value: c.name, label: `${c.flag} ${c.name}` }));
   const fullName = `${emp.firstName} ${emp.lastName}`;
   const avatarColor = getAvatarColor(fullName);
   const managerEmployee = emp.managerId ? employees.find((e: any) => e.id === emp.managerId) : null;
@@ -578,9 +594,9 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
               } />
               <ViewRow label="Salary" value={(isAdmin || isOwnProfile) && emp.salary ? `${emp.currency || "USD"} ${Number(emp.salary).toLocaleString()}` : "Restricted"} />
               <ViewRow label="Currency" value={emp.currency || "USD"} />
-              <ViewRow label="Payment Method" value={"\u2014"} />
-              <ViewRow label="Bank Account" value={"\u2014"} />
-              <ViewRow label="Tax ID" value={"\u2014"} />
+              <ViewRow label="CPR Number" value={emp.metadata?.cprNumber ? emp.metadata.cprNumber.substring(0, 4) + "****" : "\u2014"} />
+              <ViewRow label="Bank Account" value={emp.metadata?.bankAccount ? emp.metadata.bankAccount.substring(0, 4) + " **** **** " + emp.metadata.bankAccount.slice(-4) : "\u2014"} />
+              <ViewRow label="Payment Method" value={"Bank Transfer"} />
             </div>
 
             {/* Personal */}
@@ -590,19 +606,23 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
               <SectionHeader title="Personal" />
               {editingSection === "personal" ? (
                 <>
-                  <EditInputRow label="Date of Birth" value={personalForm.phone} onChange={(v) => setPersonalForm(p => ({ ...p, phone: v }))} placeholder="DD/MM/YYYY" />
-                  <EditSelectRow label="Gender" value={personalForm.city} onChange={(v) => setPersonalForm(p => ({ ...p, city: v }))} options={[{value:"male",label:"Male"},{value:"female",label:"Female"},{value:"non-binary",label:"Non-binary"},{value:"prefer-not",label:"Prefer not to say"}]} placeholder="Select gender" />
+                  <EditInputRow label="Date of Birth" value={personalForm.dob} onChange={(v) => setPersonalForm(p => ({ ...p, dob: v }))} placeholder="DD/MM/YYYY" />
+                  <EditSelectRow label="Gender" value={personalForm.gender} onChange={(v) => setPersonalForm(p => ({ ...p, gender: v }))} options={[{value:"male",label:"Male"},{value:"female",label:"Female"},{value:"non-binary",label:"Non-binary"},{value:"prefer-not",label:"Prefer not to say"}]} placeholder="Select gender" />
                   <EditSelectRow label="Pronouns" value={personalForm.pronouns} onChange={(v) => setPersonalForm(p => ({ ...p, pronouns: v }))} options={[{value:"He / Him",label:"He / Him"},{value:"She / Her",label:"She / Her"},{value:"They / Them",label:"They / Them"},{value:"Other",label:"Other"}]} placeholder="Select pronouns" />
-                  <EditSelectRow label="Nationality" value={personalForm.country} onChange={(v) => setPersonalForm(p => ({ ...p, country: v }))} options={countryOptions} placeholder="Select nationality" />
-                  <EditSelectRow label="Marital Status" value="" onChange={() => {}} options={[{value:"single",label:"Single"},{value:"married",label:"Married"},{value:"divorced",label:"Divorced"},{value:"widowed",label:"Widowed"},{value:"domestic-partner",label:"Domestic Partner"}]} placeholder="Select status" />
+                  <EditSelectRow label="Nationality" value={personalForm.nationality} onChange={(v) => setPersonalForm(p => ({ ...p, nationality: v }))} options={countryOptions} placeholder="Select nationality" />
+                  <EditSelectRow label="Marital Status" value={personalForm.maritalStatus} onChange={(v) => setPersonalForm(p => ({ ...p, maritalStatus: v }))} options={[{value:"single",label:"Single"},{value:"married",label:"Married"},{value:"divorced",label:"Divorced"},{value:"widowed",label:"Widowed"},{value:"domestic-partner",label:"Domestic Partner"}]} placeholder="Select status" />
+                  <EditInputRow label="CPR Number" value={personalForm.cprNumber} onChange={(v) => setPersonalForm(p => ({ ...p, cprNumber: v }))} placeholder="DDMMYY-XXXX" />
+                  <EditInputRow label="Bank Account (IBAN)" value={personalForm.bankAccount} onChange={(v) => setPersonalForm(p => ({ ...p, bankAccount: v }))} placeholder="DK12 3456 7890 1234" />
                 </>
               ) : (
                 <>
-                  <ViewRow label="Date of Birth" value={"\u2014"} />
-                  <ViewRow label="Gender" value={"\u2014"} />
+                  <ViewRow label="Date of Birth" value={emp.metadata?.dob || "\u2014"} />
+                  <ViewRow label="Gender" value={emp.metadata?.gender || "\u2014"} />
                   <ViewRow label="Pronouns" value={emp.metadata?.pronouns || "\u2014"} />
-                  <ViewRow label="Nationality" value={emp.country || "\u2014"} />
-                  <ViewRow label="Marital Status" value={"\u2014"} />
+                  <ViewRow label="Nationality" value={emp.metadata?.nationality || emp.country || "\u2014"} />
+                  <ViewRow label="Marital Status" value={emp.metadata?.maritalStatus ? emp.metadata.maritalStatus.charAt(0).toUpperCase() + emp.metadata.maritalStatus.slice(1) : "\u2014"} />
+                  <ViewRow label="CPR Number" value={emp.metadata?.cprNumber ? emp.metadata.cprNumber.substring(0, 4) + "-****" : "\u2014"} />
+                  <ViewRow label="Bank Account" value={emp.metadata?.bankAccount ? emp.metadata.bankAccount.substring(0, 4) + " **** " + emp.metadata.bankAccount.slice(-4) : "\u2014"} />
                 </>
               )}
             </div>
@@ -612,9 +632,9 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
               <SectionHeader title="Contact Information" />
               {editingSection === "personal" ? (
                 <>
-                  <EditInputRow label="Personal Email" value="" onChange={() => {}} placeholder="personal@email.com" />
+                  <EditInputRow label="Personal Email" value={personalForm.personalEmail} onChange={(v) => setPersonalForm(p => ({ ...p, personalEmail: v }))} placeholder="personal@email.com" />
                   <EditInputRow label="Phone" value={personalForm.phone} onChange={(v) => setPersonalForm(p => ({ ...p, phone: v }))} placeholder="+45 12345678" />
-                  <EditInputRow label="Mobile" value="" onChange={() => {}} placeholder="+45 ..." />
+                  <EditInputRow label="Mobile" value={personalForm.mobile} onChange={(v) => setPersonalForm(p => ({ ...p, mobile: v }))} placeholder="+45 ..." />
                 </>
               ) : (
                 <>
@@ -630,10 +650,10 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
               <SectionHeader title="Home Address" />
               {editingSection === "personal" ? (
                 <>
-                  <EditInputRow label="Street" value="" onChange={() => {}} placeholder="123 Main Street" />
+                  <EditInputRow label="Street" value={personalForm.street} onChange={(v) => setPersonalForm(p => ({ ...p, street: v }))} placeholder="123 Main Street" />
                   <EditInputRow label="City" value={personalForm.city} onChange={(v) => setPersonalForm(p => ({ ...p, city: v }))} />
-                  <EditInputRow label="State/Region" value="" onChange={() => {}} placeholder="Capital Region" />
-                  <EditInputRow label="Postal Code" value="" onChange={() => {}} placeholder="2100" />
+                  <EditInputRow label="State/Region" value={personalForm.region} onChange={(v) => setPersonalForm(p => ({ ...p, region: v }))} placeholder="Capital Region" />
+                  <EditInputRow label="Postal Code" value={personalForm.postalCode} onChange={(v) => setPersonalForm(p => ({ ...p, postalCode: v }))} placeholder="2100" />
                   <EditSelectRow label="Country" value={personalForm.country} onChange={(v) => setPersonalForm(p => ({ ...p, country: v }))} options={countryOptions} placeholder="Select country" />
                 </>
               ) : (
@@ -652,10 +672,10 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
               <SectionHeader title="About" />
               {editingSection === "personal" ? (
                 <>
-                  <EditInputRow label="Bio" value="" onChange={() => {}} placeholder="Tell us about yourself..." />
-                  <EditInputRow label="Interests" value="" onChange={() => {}} placeholder="Reading, Sports..." />
-                  <EditInputRow label="Skills" value="" onChange={() => {}} placeholder="JavaScript, Python..." />
-                  <EditInputRow label="Languages" value="" onChange={() => {}} placeholder="English, Danish..." />
+                  <EditInputRow label="Bio" value={personalForm.bio} onChange={(v) => setPersonalForm(p => ({ ...p, bio: v }))} placeholder="Tell us about yourself..." />
+                  <EditInputRow label="Interests" value={personalForm.interests} onChange={(v) => setPersonalForm(p => ({ ...p, interests: v }))} placeholder="Reading, Sports..." />
+                  <EditInputRow label="Skills" value={personalForm.skills} onChange={(v) => setPersonalForm(p => ({ ...p, skills: v }))} placeholder="JavaScript, Python..." />
+                  <EditInputRow label="Languages" value={personalForm.languages} onChange={(v) => setPersonalForm(p => ({ ...p, languages: v }))} placeholder="English, Danish..." />
                 </>
               ) : (
                 <>
@@ -672,10 +692,10 @@ export default function EmployeeProfilePage({ overrideEmployeeId, Layout }: { ov
               <SectionHeader title="Emergency Contact" />
               {editingSection === "personal" ? (
                 <>
-                  <EditInputRow label="Contact Name" value="" onChange={() => {}} placeholder="Full name" />
-                  <EditSelectRow label="Relationship" value="" onChange={() => {}} options={[{value:"spouse",label:"Spouse"},{value:"parent",label:"Parent"},{value:"sibling",label:"Sibling"},{value:"child",label:"Child"},{value:"friend",label:"Friend"},{value:"other",label:"Other"}]} placeholder="Select relationship" />
-                  <EditInputRow label="Phone" value="" onChange={() => {}} placeholder="+45 ..." />
-                  <EditInputRow label="Email" value="" onChange={() => {}} placeholder="email@example.com" />
+                  <EditInputRow label="Contact Name" value={personalForm.emergencyName} onChange={(v) => setPersonalForm(p => ({ ...p, emergencyName: v }))} placeholder="Full name" />
+                  <EditSelectRow label="Relationship" value={personalForm.emergencyRelation} onChange={(v) => setPersonalForm(p => ({ ...p, emergencyRelation: v }))} options={[{value:"spouse",label:"Spouse"},{value:"parent",label:"Parent"},{value:"sibling",label:"Sibling"},{value:"child",label:"Child"},{value:"friend",label:"Friend"},{value:"other",label:"Other"}]} placeholder="Select relationship" />
+                  <EditInputRow label="Phone" value={personalForm.emergencyPhone} onChange={(v) => setPersonalForm(p => ({ ...p, emergencyPhone: v }))} placeholder="+45 ..." />
+                  <EditInputRow label="Email" value={personalForm.emergencyEmail} onChange={(v) => setPersonalForm(p => ({ ...p, emergencyEmail: v }))} placeholder="email@example.com" />
                 </>
               ) : (
                 <>
