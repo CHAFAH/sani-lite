@@ -140,10 +140,12 @@ export default function Pricing() {
                     <ul className="space-y-3 mb-8 flex-1">
                       {tier.features.map((feature) => (
                         <li key={feature} className="flex items-start">
-                          <span className="inline-block w-5 h-5 rounded-full bg-teal-100 text-teal-600 text-xs flex items-center justify-center mr-3 flex-shrink-0 mt-0.5">
-                            ✓
+                          <span className="inline-flex w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-3 flex-shrink-0 mt-0.5" aria-hidden="true">
+                            <svg className="w-4 h-4 sm:w-3 sm:h-3" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15 5.293 11.879a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
                           </span>
-                          <span className="text-sm text-foreground">{feature}</span>
+                          <span className="text-sm text-foreground leading-relaxed min-w-0 break-words">{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -211,10 +213,12 @@ export default function Pricing() {
                         <ul className="space-y-3 mb-8 flex-1">
                           {tier.features.map((feature) => (
                             <li key={feature} className="flex items-start">
-                              <span className="inline-block w-5 h-5 rounded-full bg-teal-100 text-teal-600 text-xs flex items-center justify-center mr-3 flex-shrink-0 mt-0.5">
-                                ✓
+                              <span className="inline-flex w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-3 flex-shrink-0 mt-0.5" aria-hidden="true">
+                                <svg className="w-4 h-4 sm:w-3 sm:h-3" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15 5.293 11.879a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
                               </span>
-                              <span className="text-sm text-foreground">{feature}</span>
+                              <span className="text-sm text-foreground leading-relaxed min-w-0 break-words">{feature}</span>
                             </li>
                           ))}
                         </ul>

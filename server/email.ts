@@ -8,9 +8,14 @@ const FROM_EMAIL = process.env.FROM_EMAIL ?? "SANI <onboarding@resend.dev>";
 
 let resendClient: Resend | null = null;
 
+// When RESEND_API_KEY is not provided we run in a safe "dev" email mode
+// which logs emails to the server console and returns a fake message id.
+const EMAIL_DEV_MODE = !RESEND_API_KEY;
+
 function getResendClient(): Resend {
   if (!resendClient) {
     if (!RESEND_API_KEY) {
+      // If running in dev mode, don't throw — callers should use EMAIL_DEV_MODE to short-circuit.
       throw new Error("RESEND_API_KEY is not configured. Please set it in environment variables.");
     }
     resendClient = new Resend(RESEND_API_KEY);
@@ -184,6 +189,13 @@ export async function sendInvitationEmail(
   data: InvitationEmailData
 ): Promise<SendInvitationEmailResult> {
   try {
+    if (EMAIL_DEV_MODE) {
+      // Log a compact representation of the invitation to the server log for local/dev use.
+      console.log("[Email DEV] Invitation to:", data.recipientEmail, "role:", data.role, "inviteLink:", data.inviteLink);
+      // Also log the plain-text body for convenience
+      console.log(buildInvitationEmailText(data));
+      return { success: true, messageId: `dev-invite-${Date.now()}` };
+    }
     const resend = getResendClient();
 
     const { data: result, error } = await resend.emails.send({
@@ -236,6 +248,10 @@ export async function sendWelcomeEmail(
   data: WelcomeEmailData
 ): Promise<SendInvitationEmailResult> {
   try {
+    if (EMAIL_DEV_MODE) {
+      console.log("[Email DEV] Welcome email to:", data.recipientEmail, "company:", data.companyName, "dashboard:", data.dashboardLink);
+      return { success: true, messageId: `dev-welcome-${Date.now()}` };
+    }
     const resend = getResendClient();
 
     const html = `
@@ -321,6 +337,10 @@ export async function sendPayslipEmail({
   pdfUrl?: string;
 }) {
   try {
+    if (EMAIL_DEV_MODE) {
+      console.log("[Email DEV] Payslip email to:", recipientEmail, "employee:", employeeName, "company:", companyName, "month:", month, "year:", year, "netPay:", netPay);
+      return { success: true, messageId: `dev-payslip-${Date.now()}` };
+    }
     const resend = getResendClient();
     const attachments = pdfBuffer
       ? [{ filename: pdfFileName || `Payslip-${month}-${year}.pdf`, content: pdfBuffer, contentType: "application/pdf" }]

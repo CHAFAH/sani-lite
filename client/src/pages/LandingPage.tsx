@@ -10,6 +10,7 @@ import { useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import MarketingLayout from "@/components/MarketingLayout";
+import GlobalPayrollMap from "@/components/GlobalPayrollMap";
 import { testimonials, pricingTiers } from "@/lib/mockData";
 
 // Image URLs
@@ -178,6 +179,101 @@ function Features() {
             <img src={FEATURES_ABSTRACT} alt="Features" className="w-full h-auto" />
           </motion.div>
         </AnimatedSection>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// GLOBAL PAYROLL
+// ============================================================
+function GlobalPayrollSection() {
+  const stats = [
+    { label: "Customer satisfaction", value: "94%" },
+    { label: "Companies", value: "2,500+" },
+    { label: "Countries", value: "100+" },
+    { label: "Employees managed", value: "500K+" },
+    { label: "Uptime SLA", value: "99.9%" },
+  ];
+
+  const mapMarkers = [
+    { id: "europe", title: "Europe — Local payroll & banking", top: "32%", left: "55%", status: "live" as const },
+    { id: "americas", title: "Americas — Payroll & banking", top: "48%", left: "23%", status: "ok" as const },
+    { id: "apac", title: "APAC — Local partners & FX", top: "56%", left: "78%", status: "live" as const },
+  ];
+
+  return (
+    <section className="py-24 bg-white">
+      <div className="container">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-sm font-medium mb-4">
+              Global Payroll
+            </div>
+            <h2 className="text-4xl sm:text-5xl font-normal tracking-tight mb-6 font-serif">
+              Pay your team anywhere in the world
+            </h2>
+            <p className="text-lg text-muted-foreground mb-6 max-w-2xl leading-relaxed">
+              Run compliant payroll in 100+ countries from a single platform. Local expertise, global scale, zero headaches.
+            </p>
+
+            <div className="flex flex-wrap gap-3 mb-6">
+              <Link href="/login">
+                <Button className="bg-teal-600 hover:bg-teal-700 text-white">Get Started Free</Button>
+              </Link>
+              <Link href="#pricing">
+                <Button variant="outline">View Pricing</Button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+              {["01", "02", "03", "04", "05", "06"].map((n, i) => {
+                const items = [
+                  "100+ Country Coverage",
+                  "Multi-Currency Support",
+                  "Automated Tax Filing",
+                  "Contractor Payments",
+                  "Payroll Calendar",
+                  "Compliance Engine",
+                ];
+                return (
+                  <div key={n} className="flex items-start gap-3">
+                    <div className="text-2xl font-mono font-black text-teal-600">{n}</div>
+                    <div>
+                      <div className="text-sm font-semibold">{items[i]}</div>
+                      <div className="text-xs text-muted-foreground">{[
+                        "Process payroll in over 100 countries with local tax compliance, statutory deductions, and filings.",
+                        "Pay employees in their local currency with real-time exchange rates and transparent FX fees.",
+                        "Automatic calculation and filing of local, state, and federal taxes in every supported jurisdiction.",
+                        "Pay contractors and freelancers worldwide with compliant invoicing and 1099/W-8 management.",
+                        "Manage multiple pay schedules across countries with a unified payroll calendar and reminders.",
+                        "Stay ahead of changing regulations with automatic updates to tax tables and labor laws.",
+                      ][i]}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-6 items-center">
+              {stats.map((s) => (
+                <div key={s.label} className="flex flex-col">
+                  <span className="text-2xl font-bold">{s.value}</span>
+                  <span className="text-xs text-muted-foreground">{s.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="lg:col-span-6">
+            <GlobalPayrollMap
+              src={PAYROLL_GLOBE}
+              markers={mapMarkers}
+              alt="SANI global payroll map with coverage markers"
+            />
+            <p className="text-xs text-muted-foreground mt-3">Real-time map shows countries where we operate and live banking/payment connections.</p>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -425,6 +521,7 @@ export default function LandingPage() {
   return (
     <MarketingLayout>
       <Hero />
+      <GlobalPayrollSection />
       <Features />
       <Testimonials />
       <Pricing />

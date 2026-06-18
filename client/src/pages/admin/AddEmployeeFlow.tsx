@@ -30,15 +30,23 @@ interface FormData {
 export default function AddEmployeeFlow() {
   const [, setLocation] = useLocation();
   const { data: employees = [] } = trpc.employee.list.useQuery();
-  const createMut = trpc.employee.create.useMutation({
-    onSuccess: () => {
-      toast.success("Employee created successfully");
-      setLocation("/admin/employees");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to create employee");
-    },
-  });
+  const createMut = trpc.employee.create.useMutation();
+  const inviteMut = trpc.invitation.create.useMutation();
+  const notifyMut = trpc.system.notifyOwner.useMutation();
+
+  // Onboarding pipeline state
+  type PipelineStep = { id: string; label: string; status: "pending" | "in_progress" | "done" | "failed" };
+  const [pipeline, setPipeline] = useState<PipelineStep[]>([
+    { id: "fill_details", label: "Fill Details", status: "pending" },
+    { id: "send_welcome", label: "Send Welcome Email", status: "pending" },
+    { id: "assign_equipment", label: "Assign Equipment (notify IT)", status: "pending" },
+    { id: "schedule_onboarding", label: "Schedule Onboarding", status: "pending" },
+    { id: "notify_manager", label: "Notify Manager", status: "pending" },
+    { id: "complete", label: "Complete", status: "pending" },
+  ]);
+  const [runningPipeline, setRunningPipeline] = useState(false);
+  const [expandedStep, setExpandedStep] = useState<string | null>("fill_details");
+  const [equipmentNotes, setEquipmentNotes] = useState<string>(`Laptop, Monitor, Docking station`);
 
   const [currentStep, setCurrentStep] = useState<Step>("basic");
   const [form, setForm] = useState<FormData>({
@@ -86,11 +94,116 @@ export default function AddEmployeeFlow() {
   };
 
   const handleSubmit = () => {
-    createMut.mutate({
-      ...form,
-      managerId: form.managerId ? parseInt(form.managerId.toString()) : undefined,
-    } as any);
+    // Start the onboarding pipeline flow instead of directly mutating with callback-only
+    runOnboardingPipeline();
   };
+
+  const updateStep = (id: string, status: PipelineStep["status"]) => setPipeline(p => p.map(s => s.id === id ? { ...s, status } : s));
+
+  // Per-step runner functions (return true on success)
+  const runFillDetailsStep = async () => {
+    updateStep("fill_details", "in_progress");
+    if (!form.firstName || !form.lastName || !form.email) {
+      toast.error("Please fill in required fields before continuing");
+      updateStep("fill_details", "failed");
+      return false;
+    }
+    try {
+      await createMut.mutateAsync({
+        ...form,
+        managerId: form.managerId ? parseInt(form.managerId.toString()) : undefined,
+      } as any);
+      updateStep("fill_details", "done");
+      return true;
+    } catch (err: any) {
+      updateStep("fill_details", "failed");
+      toast.error(err?.message || "Failed to create employee");
+      return false;
+    }
+  };
+
+  const runSendWelcomeStep = async () => {
+    updateStep("send_welcome", "in_progress");
+    try {
+      await inviteMut.mutateAsync({ email: form.email, role: "employee" });
+      updateStep("send_welcome", "done");
+      return true;
+    } catch (err: any) {
+      updateStep("send_welcome", "failed");
+      toast.error(err?.message || "Failed to send invitation");
+      return false;
+    }
+  };
+
+  const runAssignEquipmentStep = async () => {
+    updateStep("assign_equipment", "in_progress");
+    try {
+      await notifyMut.mutateAsync({ title: "New Hire Equipment Request", content: `Please provision equipment for ${form.firstName} ${form.lastName} (${form.email}). Notes: ${equipmentNotes}` });
+      updateStep("assign_equipment", "done");
+      return true;
+    } catch (err: any) {
+      updateStep("assign_equipment", "failed");
+      toast.error(err?.message || "Failed to notify IT");
+      return false;
+    }
+  };
+
+  const runScheduleOnboardingStep = async () => {
+    updateStep("schedule_onboarding", "in_progress");
+    try {
+      await notifyMut.mutateAsync({ title: "Schedule Onboarding", content: `Please schedule onboarding session for ${form.firstName} ${form.lastName} starting on ${form.startDate || "TBD"}. Manager ID: ${form.managerId || "TBD"}` });
+      updateStep("schedule_onboarding", "done");
+      return true;
+    } catch (err: any) {
+      updateStep("schedule_onboarding", "failed");
+      toast.error(err?.message || "Failed to schedule onboarding");
+      return false;
+    }
+  };
+
+  const runNotifyManagerStep = async () => {
+    updateStep("notify_manager", "in_progress");
+    try {
+      await notifyMut.mutateAsync({ title: "New Hire Assigned", content: `You have been assigned as manager for ${form.firstName} ${form.lastName} (${form.email}). Please welcome and schedule a 1:1.` });
+      updateStep("notify_manager", "done");
+      return true;
+    } catch (err: any) {
+      updateStep("notify_manager", "failed");
+      toast.error(err?.message || "Failed to notify manager");
+      return false;
+    }
+  };
+
+  async function runOnboardingPipeline() {
+    if (runningPipeline) return;
+    setRunningPipeline(true);
+    try {
+      // Run each step sequentially and expand the active one
+      setExpandedStep("fill_details");
+      const ok1 = await runFillDetailsStep();
+
+      setExpandedStep("send_welcome");
+      if (ok1) await runSendWelcomeStep();
+
+      setExpandedStep("assign_equipment");
+      await runAssignEquipmentStep();
+
+      setExpandedStep("schedule_onboarding");
+      await runScheduleOnboardingStep();
+
+      setExpandedStep("notify_manager");
+      await runNotifyManagerStep();
+
+      updateStep("complete", "in_progress");
+      updateStep("complete", "done");
+
+      toast.success("Onboarding pipeline completed (some steps may have failed)");
+      setTimeout(() => setLocation("/admin/employees"), 800);
+    } finally {
+      setRunningPipeline(false);
+      setExpandedStep(null);
+    }
+  }
 
   const managers = employees.filter((e: any) => (e as any)?.role === "manager" || (e as any)?.role === "admin");
 
@@ -382,6 +495,104 @@ export default function AddEmployeeFlow() {
             )}
           </CardContent>
         </Card>
+        {/* Pipeline UI - accordion style */}
+        <div className="space-y-3">
+          <p className="text-sm text-slate-500">Onboarding pipeline steps (click a step to expand and view details / run individually):</p>
+          <div className="space-y-2">
+            {pipeline.map((p) => (
+              <div key={p.id} className="border rounded-lg bg-white">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between p-3"
+                  onClick={() => setExpandedStep(expandedStep === p.id ? null : p.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${p.status === 'done' ? 'bg-emerald-100 text-emerald-700' : p.status === 'in_progress' ? 'bg-amber-50 text-amber-700' : p.status === 'failed' ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-500'}`}>
+                      {p.status === 'done' ? '✓' : p.status === 'in_progress' ? '…' : p.status === 'failed' ? '!' : p.label.split(' ')[0]}
+                    </div>
+                    <div className="text-sm font-medium text-slate-800">{p.label}</div>
+                  </div>
+                  <div className="text-xs text-slate-500">{p.status}</div>
+                </button>
+
+                {expandedStep === p.id && (
+                  <div className="p-3 border-t bg-slate-50">
+                    {/* Step details and individual run button */}
+                    <div className="mb-2 text-sm text-slate-700">
+                      {p.id === 'fill_details' && (
+                        <div>
+                          <p className="font-medium">Verify details</p>
+                          <p className="text-xs">Make sure the basic info and job fields are filled. This step creates the employee record.</p>
+                        </div>
+                      )}
+                      {p.id === 'send_welcome' && (
+                        <div>
+                          <p className="font-medium">Invitation email</p>
+                          <p className="text-xs">Sends the welcome / invitation email to the provided address.</p>
+                        </div>
+                      )}
+                      {p.id === 'assign_equipment' && (
+                        <div>
+                          <p className="font-medium">Equipment request</p>
+                          <p className="text-xs">Notify IT to provision equipment. You can edit the equipment notes below.</p>
+                          <div className="mt-2">
+                            <Label htmlFor="equipmentNotes">Equipment Notes</Label>
+                            <Input id="equipmentNotes" value={equipmentNotes} onChange={(e) => setEquipmentNotes(e.target.value)} />
+                          </div>
+                        </div>
+                      )}
+                      {p.id === 'schedule_onboarding' && (
+                        <div>
+                          <p className="font-medium">Schedule onboarding</p>
+                          <p className="text-xs">Notify scheduling to book onboarding sessions. Start date: <strong>{form.startDate || 'TBD'}</strong></p>
+                        </div>
+                      )}
+                      {p.id === 'notify_manager' && (
+                        <div>
+                          <p className="font-medium">Manager notification</p>
+                          <p className="text-xs">Notifies the assigned manager to welcome and schedule a 1:1 with the new hire.</p>
+                        </div>
+                      )}
+                      {p.id === 'complete' && (
+                        <div>
+                          <p className="font-medium">Complete</p>
+                          <p className="text-xs">Final step indicates the pipeline finished.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          // run only this step
+                          if (p.id === 'fill_details') await runFillDetailsStep();
+                          if (p.id === 'send_welcome') await runSendWelcomeStep();
+                          if (p.id === 'assign_equipment') await runAssignEquipmentStep();
+                          if (p.id === 'schedule_onboarding') await runScheduleOnboardingStep();
+                          if (p.id === 'notify_manager') await runNotifyManagerStep();
+                        }}
+                      >
+                        Run Step
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          // expand next step when clicking "Next"
+                          const idx = pipeline.findIndex(s => s.id === p.id);
+                          const next = pipeline[idx + 1];
+                          if (next) setExpandedStep(next.id);
+                        }}
+                      >
+                        Open Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Navigation Buttons */}
         <div className="flex gap-3 justify-between">
@@ -412,12 +623,12 @@ export default function AddEmployeeFlow() {
               </Button>
             ) : (
               <Button
-                onClick={handleSubmit}
-                disabled={createMut.isPending}
+                onClick={runOnboardingPipeline}
+                disabled={runningPipeline}
                 className="bg-teal-600 hover:bg-teal-700 text-white"
               >
                 <Check size={16} className="mr-2" />
-                {createMut.isPending ? "Sending..." : "Send Invitation"}
+                {runningPipeline ? "Running Pipeline..." : "Start Onboarding"}
               </Button>
             )}
           </div>

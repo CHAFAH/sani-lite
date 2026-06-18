@@ -258,9 +258,8 @@ export function registerAuthRoutes(app: Express) {
       const user = await db.getUserByOpenId(openId);
       if (user) {
         await db.updateUserPassword(user.id, passwordHash);
-        if (!user.companyId) {
-          await db.setUserCompanyId(openId, invitation.companyId);
-        }
+        // Always set company for invited user
+        await db.setUserCompanyId(openId, invitation.companyId);
 
         // Create employee profile if it doesn't exist
         const employees = await db.getEmployeesByCompanyId(invitation.companyId);

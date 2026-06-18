@@ -14,6 +14,7 @@ import {
   Clock, CheckCircle2, ArrowUpRight, Loader2, FileText,
   AlertCircle,
 } from "lucide-react";
+import GlobalPayrollMap from "@/components/GlobalPayrollMap";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import {
@@ -180,6 +181,23 @@ export default function AdminPayrollHubPage() {
         </div>
 
         {/* Cycles Activity Chart */}
+        {/* Global Payroll Map */}
+        <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-slate-900">Global Coverage</h2>
+              <Badge variant="outline" className="text-xs text-slate-500">Live</Badge>
+            </div>
+            <GlobalPayrollMap
+              src="/__manus__/payroll-globe-small.webp"
+              markers={[
+                { id: "americas", title: "Americas", top: "48%", left: "23%", status: "ok" as const },
+                { id: "europe", title: "Europe", top: "32%", left: "55%", status: "live" as const },
+                { id: "apac", title: "APAC", top: "56%", left: "78%", status: "live" as const },
+              ]}
+            />
+          </CardContent>
+        </Card>
         <Card className="border border-slate-100 shadow-sm bg-white rounded-2xl">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">

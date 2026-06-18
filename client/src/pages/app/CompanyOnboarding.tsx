@@ -10,12 +10,21 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { COUNTRIES } from "@shared/countries";
 import {
-  Building2, Palette, Globe, CreditCard, Users, Check, Upload, X, Plus, Trash2, ArrowLeft, ArrowRight, Loader2,
+  Building2, Palette, Globe, CreditCard, Users, Check, Upload, X, Plus, Trash2, ArrowLeft, ArrowRight, Loader2, UserPlus, Eye, EyeOff, Lock, Mail,
 } from "lucide-react";
 
-type Step = "info" | "branding" | "domain" | "subscription" | "invite";
+type Step = "account" | "info" | "branding" | "domain" | "subscription" | "invite";
 
-const STEPS: { key: Step; label: string; icon: React.ElementType }[] = [
+const STEPS_UNAUTH: { key: Step; label: string; icon: React.ElementType }[] = [
+  { key: "account", label: "Account", icon: UserPlus },
+  { key: "info", label: "Company Info", icon: Building2 },
+  { key: "branding", label: "Branding", icon: Palette },
+  { key: "domain", label: "Domain", icon: Globe },
+  { key: "subscription", label: "Plan", icon: CreditCard },
+  { key: "invite", label: "Invite Team", icon: Users },
+];
+
+const STEPS_AUTH: { key: Step; label: string; icon: React.ElementType }[] = [
   { key: "info", label: "Company Info", icon: Building2 },
   { key: "branding", label: "Branding", icon: Palette },
   { key: "domain", label: "Domain", icon: Globe },
@@ -31,11 +40,17 @@ const INDUSTRIES = [
 ];
 
 export default function CompanyOnboarding() {
-  const [step, setStep] = useState<Step>("info");
+  const { user, loading, refresh } = useAuth();
+  const STEPS = user ? STEPS_AUTH : STEPS_UNAUTH;
+  const [step, setStep] = useState<Step>(user ? "info" : "account");
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [, setLocation] = useLocation();
-  const { user, loading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Account creation state
+  const [accountData, setAccountData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [accountLoading, setAccountLoading] = useState(false);
 
   // Step 1: Company Info
   const [formData, setFormData] = useState({
@@ -73,6 +88,38 @@ export default function CompanyOnboarding() {
   const createInviteMut = trpc.invitation.create.useMutation();
 
   const stepIndex = STEPS.findIndex(s => s.key === step);
+
+  // Handle account creation
+  const handleAccountNext = async () => {
+    if (!accountData.name.trim()) { toast.error("Full name is required"); return; }
+    if (!accountData.email.trim()) { toast.error("Email is required"); return; }
+    if (accountData.password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (!/[A-Z]/.test(accountData.password) || !/[a-z]/.test(accountData.password) || !/[0-9]/.test(accountData.password) || !/[^A-Za-z0-9]/.test(accountData.password)) {
+      toast.error("Password must include uppercase, lowercase, number, and special character"); return;
+    }
+    if (accountData.password !== accountData.confirmPassword) { toast.error("Passwords don't match"); return; }
+
+    setAccountLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: accountData.email, password: accountData.password, name: accountData.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || "Registration failed"); setAccountLoading(false); return; }
+      // Refresh auth state
+      await refresh();
+      setStep("info");
+    } catch {
+      toast.error("Something went wrong");
+    }
+    setAccountLoading(false);
+  };
+
+  const handleGoogleSignup = () => {
+    window.location.href = "/api/auth/google?returnPath=/signup";
+  };
 
   const handleLogoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -177,16 +224,26 @@ export default function CompanyOnboarding() {
 
   const handleComplete = async () => {
     try {
-      // Send all invitations
+      // Send all invitations and track whether emails were delivered
+      let anyFailures = false;
       for (const invite of invites) {
-        await createInviteMut.mutateAsync({
+        const res = await createInviteMut.mutateAsync({
           email: invite.email,
           role: invite.role as "admin" | "hr_admin" | "manager" | "employee",
         });
+        // server returns { success, invitationId, token, emailSent }
+        if (res && (res as any).emailSent === false) anyFailures = true;
       }
+      // Invalidate invitation list cache so admin UI sees new invites
+      try { await utils.invitation.list.invalidate(); } catch {}
+
       // Complete onboarding
       await completeOnboardingMut.mutateAsync();
-      toast.success("Company setup complete! Welcome to SANI.");
+      if (anyFailures) {
+        toast.warning("Some invitations were created but email delivery failed. You can resend from Invitations.");
+      } else {
+        toast.success("Company setup complete! Invitations sent.");
+      }
       setLocation("/admin/dashboard");
     } catch { toast.error("Failed to complete setup"); }
   };
@@ -206,21 +263,6 @@ export default function CompanyOnboarding() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-white p-6">
-        <div className="text-center max-w-md">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Create your account first</h2>
-          <p className="text-sm text-slate-500 mb-6">Sign in or create an account before setting up your company.</p>
-          <div className="space-y-3">
-            <a href="/api/dev-login?redirect=/signup" className="block w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl text-center text-sm transition-all">Sign in with Google</a>
-            <a href="/login" className="block w-full py-3 px-4 border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-center text-sm transition-all">Back to Login</a>
-          </div>
-        </div>
       </div>
     );
   }
@@ -264,8 +306,88 @@ export default function CompanyOnboarding() {
           </div>
         </div>
 
+        {/* Step 0: Account Creation */}
+        {step === "account" && !user && (
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><UserPlus className="w-5 h-5 text-teal-600" /> Create Your Account</CardTitle>
+              <CardDescription>Set up your admin account to manage your company on SANI</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {/* Google option */}
+              <button onClick={handleGoogleSignup} className="w-full flex items-center justify-center gap-3 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-3 px-4 rounded-xl transition-all">
+                <svg className="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                <span className="text-sm">Continue with Google</span>
+              </button>
+
+              <div className="relative"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div><div className="relative flex justify-center text-xs"><span className="bg-white px-4 text-slate-400">or create with email</span></div></div>
+
+              {/* Email form */}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">Full Name *</label>
+                  <Input value={accountData.name} onChange={(e) => setAccountData({ ...accountData, name: e.target.value })} placeholder="John Doe" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">Work Email *</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="email" value={accountData.email} onChange={(e) => setAccountData({ ...accountData, email: e.target.value })} placeholder="you@company.com" className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">Password *</label>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type={showPassword ? "text" : "password"} value={accountData.password} onChange={(e) => setAccountData({ ...accountData, password: e.target.value })} placeholder="Create a strong password" className="w-full h-11 pl-10 pr-10 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  </div>
+                </div>
+                {accountData.password.length > 0 && (
+                  <div className="bg-slate-50 rounded-lg p-3 space-y-1.5">
+                    {[
+                      { label: "At least 8 characters", met: accountData.password.length >= 8 },
+                      { label: "Uppercase letter", met: /[A-Z]/.test(accountData.password) },
+                      { label: "Lowercase letter", met: /[a-z]/.test(accountData.password) },
+                      { label: "Number", met: /[0-9]/.test(accountData.password) },
+                      { label: "Special character", met: /[^A-Za-z0-9]/.test(accountData.password) },
+                    ].map((c) => (
+                      <div key={c.label} className="flex items-center gap-2 text-xs">
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center ${c.met ? "bg-teal-500" : "bg-slate-200"}`}>
+                          {c.met && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                        </div>
+                        <span className={c.met ? "text-teal-700" : "text-slate-500"}>{c.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">Confirm Password *</label>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type={showPassword ? "text" : "password"} value={accountData.confirmPassword} onChange={(e) => setAccountData({ ...accountData, confirmPassword: e.target.value })} placeholder="Re-enter password" className={`w-full h-11 pl-10 pr-10 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white ${accountData.confirmPassword && accountData.password !== accountData.confirmPassword ? "border-red-300" : "border-slate-200"}`} />
+                    {accountData.confirmPassword && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {accountData.password === accountData.confirmPassword ? <Check size={16} className="text-teal-500" /> : <X size={16} className="text-red-400" />}
+                      </div>
+                    )}
+                  </div>
+                  {accountData.confirmPassword && accountData.password !== accountData.confirmPassword && <p className="text-xs text-red-500 mt-1">Passwords don't match</p>}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={() => window.location.href = "/login"} className="flex-1 h-11"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Login</Button>
+                <Button onClick={handleAccountNext} className="flex-1 bg-teal-600 hover:bg-teal-700 h-11" disabled={accountLoading}>
+                  {accountLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</> : <>Continue <ArrowRight className="w-4 h-4 ml-2" /></>}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Step 1: Company Info */}
-        {step === "info" && (
+        {step === "info" && user && (
           <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5 text-teal-600" /> Company Information</CardTitle>

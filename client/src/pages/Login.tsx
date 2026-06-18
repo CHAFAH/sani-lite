@@ -210,9 +210,11 @@ export default function Login() {
           {/* Toggle mode */}
           <p className="text-sm text-slate-500 text-center mt-6">
             {mode === "login" ? "Don't have an account? " : "Already have an account? "}
-            <button onClick={() => setMode(mode === "login" ? "register" : "login")} className="text-teal-600 font-medium hover:underline">
-              {mode === "login" ? "Sign up" : "Sign in"}
-            </button>
+            {mode === "login" ? (
+              <a href="/signup" className="text-teal-600 font-medium hover:underline">Sign up</a>
+            ) : (
+              <button onClick={() => setMode("login")} className="text-teal-600 font-medium hover:underline">Sign in</button>
+            )}
           </p>
 
           {/* Footer */}

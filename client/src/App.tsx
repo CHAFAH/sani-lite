@@ -167,10 +167,10 @@ function Router() {
       <Route path="/admin/employees" component={AdminEmployeesPage} />
       <Route path="/admin/employees/new" component={AddEmployeePage} />
       <Route path="/admin/employees/:id/edit" component={EditEmployeePage} />
-      <Route path="/admin/employees/:id" component={AdminEmployeeProfilePage} />
+  <Route path="/admin/employees/:id">{() => <AdminEmployeeProfilePage />}</Route>
       <Route path="/admin/org-chart" component={AdminOrgChartPage} />
-      <Route path="/admin/employees/:id/change-role" component={AdminEmployeeProfilePage} />
-      <Route path="/admin/employees/:id/assign-manager" component={AdminEmployeeProfilePage} />
+  <Route path="/admin/employees/:id/change-role">{() => <AdminEmployeeProfilePage />}</Route>
+  <Route path="/admin/employees/:id/assign-manager">{() => <AdminEmployeeProfilePage />}</Route>
 
       <Route path="/admin/rbac" component={AdminRbacPage} />
       <Route path="/admin/time-off" component={AdminTimeOffPage} />
