@@ -8,7 +8,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REGISTRY: 075120018043.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: 211125430491.dkr.ecr.us-east-1.amazonaws.com
   ECR_REPOSITORY: sani-lite
   EKS_CLUSTER: landmark-cluster-dev
   K8S_NAMESPACE: sani-lite

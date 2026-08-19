@@ -3,7 +3,7 @@ terraform {
   required_version = ">= 1.5.0"
 
   backend "s3" {
-    bucket       = "landmark-terraform-state-file-075120018043"
+    bucket       = "landmark-terraform-state-file-211125430491"
     key          = "sani-lite/terraform.tfstate"
     region       = "us-east-1"
     profile      = "terraform"

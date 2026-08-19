@@ -20,7 +20,7 @@
 #
 # Demo — rolling update:
 #   kubectl set image deployment/sani-app \
-#     sani-app=075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite:new-tag \
+#     sani-app=211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:new-tag \
 #     -n sani-lite
 #   kubectl rollout status deployment/sani-app -n sani-lite
 #
@@ -124,7 +124,7 @@ spec:
               done
       containers:
         - name: sani-app
-          image: 075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest
+          image: 211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest
           ports:
             - containerPort: 3000
           env:

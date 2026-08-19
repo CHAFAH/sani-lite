@@ -159,7 +159,7 @@ aws ecr create-repository \
   --region us-east-1
 
 # Output includes the repository URI:
-# 075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite
+# 211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite
 ```
 
 Or via the AWS Console:
@@ -186,7 +186,7 @@ aws ecr set-repository-policy \
         "Sid": "AllowPull",
         "Effect": "Allow",
         "Principal": {
-          "AWS": "arn:aws:iam::075120018043:root"
+          "AWS": "arn:aws:iam::211125430491:root"
         },
         "Action": [
           "ecr:GetDownloadUrlForLayer",
@@ -217,7 +217,7 @@ docker images
 ```bash
 # Set variables
 AWS_REGION=us-east-1
-AWS_ACCOUNT_ID=075120018043
+AWS_ACCOUNT_ID=211125430491
 ECR_REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 ECR_REPO=sani-lite
 
@@ -489,12 +489,12 @@ Before applying the manifests, update the image tag to the one you pushed to ECR
 
 ```bash
 # Replace the image in the deployment files
-# From: 075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest
-# To:   075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite:<your-tag>
+# From: 211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest
+# To:   211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:<your-tag>
 
 # Or update directly with kubectl after deploying:
 kubectl set image deployment/sani-app \
-  sani-app=075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite:<your-tag> \
+  sani-app=211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:<your-tag> \
   -n sani-lite
 ```
 
