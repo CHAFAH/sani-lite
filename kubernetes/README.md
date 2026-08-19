@@ -131,6 +131,78 @@ kubectl delete <kind> <name>   # remove
 
 The smallest deployable unit. A Pod wraps one or more containers that share a network namespace (same IP) and can share storage volumes. Pods are ephemeral — when they die, they're gone. You almost never create Pods directly in production.
 
+We deploy two pods: a **MySQL** database pod and the **sani-app** pod. MySQL needs a ClusterIP Service so the app can reach it by DNS name. The app needs a NodePort Service so we can open it in a browser.
+
+---
+
+#### 1. MySQL Pod + ClusterIP Service
+
+ClusterIP gives MySQL a stable internal DNS name: `mysql.sani-lite.svc.cluster.local`. The app connects using `mysql://sani:sanipassword@mysql:3306/sani`.
+
+**Declarative (YAML)**
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql
+  namespace: sani-lite
+  labels:
+    app: mysql
+spec:
+  containers:
+    - name: mysql
+      image: mysql:8.0
+      ports:
+        - containerPort: 3306
+      env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: rootpassword
+        - name: MYSQL_DATABASE
+          value: sani
+        - name: MYSQL_USER
+          value: sani
+        - name: MYSQL_PASSWORD
+          value: sanipassword
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: sani-lite
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+```
+
+**Imperative (CLI)**
+
+```bash
+# Run the MySQL pod
+kubectl run mysql \
+  --image=mysql:8.0 \
+  --port=3306 \
+  --env="MYSQL_ROOT_PASSWORD=rootpassword" \
+  --env="MYSQL_DATABASE=sani" \
+  --env="MYSQL_USER=sani" \
+  --env="MYSQL_PASSWORD=sanipassword" \
+  --labels="app=mysql" \
+  -n sani-lite
+
+# Expose it as ClusterIP
+kubectl expose pod mysql --port=3306 --target-port=3306 --type=ClusterIP -n sani-lite
+```
+
+---
+
+#### 2. sani-app Pod + NodePort Service
+
+NodePort exposes the app on every node's IP at port `30300`. Access it at `http://<NODE_PUBLIC_IP>:30300`.
+
 **Declarative (YAML)**
 
 ```yaml
@@ -139,6 +211,8 @@ kind: Pod
 metadata:
   name: sani-app
   namespace: sani-lite
+  labels:
+    app: sani-app
 spec:
   containers:
     - name: sani-app
@@ -146,47 +220,86 @@ spec:
       ports:
         - containerPort: 3000
       env:
+        - name: DATABASE_URL
+          value: mysql://sani:sanipassword@mysql:3306/sani
+        - name: JWT_SECRET
+          value: change-me-in-production
         - name: NODE_ENV
           value: production
-```
-
-```bash
-kubectl apply -f 02-pod.yaml
+        - name: PORT
+          value: "3000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sani-app
+  namespace: sani-lite
+spec:
+  type: NodePort
+  selector:
+    app: sani-app
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30300
 ```
 
 **Imperative (CLI)**
 
 ```bash
-# Run a pod directly
+# Run the app pod
 kubectl run sani-app \
   --image=211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest \
   --port=3000 \
+  --env="DATABASE_URL=mysql://sani:sanipassword@mysql:3306/sani" \
+  --env="JWT_SECRET=change-me-in-production" \
   --env="NODE_ENV=production" \
+  --env="PORT=3000" \
+  --labels="app=sani-app" \
   -n sani-lite
 
-# Generate YAML without applying (dry run)
-kubectl run sani-app \
-  --image=211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest \
-  --port=3000 \
-  --dry-run=client -o yaml
+# Expose it as NodePort on 30300
+kubectl expose pod sani-app --port=3000 --target-port=3000 --type=NodePort -n sani-lite
+# Note: --dry-run then patch nodePort=30300, or use the YAML for exact port control
+```
+
+---
+
+**Apply everything**
+
+```bash
+kubectl apply -f 02-pod.yaml
 ```
 
 **Inspect and debug**
 
 ```bash
-kubectl get pods -n sani-lite
-kubectl get pods -n sani-lite -o wide          # shows node + IP
-kubectl describe pod sani-app -n sani-lite     # events, image, status
-kubectl logs sani-app -n sani-lite             # stdout logs
-kubectl logs sani-app -n sani-lite --follow    # stream logs live
-kubectl exec -it sani-app -n sani-lite -- sh   # shell into the container
+kubectl get pods -n sani-lite                      # both pods should be Running
+kubectl get svc -n sani-lite                       # mysql (ClusterIP) + sani-app (NodePort)
+kubectl get nodes -o wide                          # grab EXTERNAL-IP for browser access
+kubectl describe pod sani-app -n sani-lite         # events, image, env
+kubectl logs sani-app -n sani-lite --follow        # stream app logs
+kubectl exec -it sani-app -n sani-lite -- sh       # shell into app container
+kubectl exec -it mysql -n sani-lite -- mysql -u sani -psanipassword sani  # MySQL shell
+```
+
+**Access the app**
+
+```bash
+# Get the node's public IP
+kubectl get nodes -o wide
+
+# Open in browser
+http://<NODE_EXTERNAL_IP>:30300
 ```
 
 **Cleanup**
 
 ```bash
-kubectl delete pod sani-app -n sani-lite
 kubectl delete -f 02-pod.yaml
+# or individually
+kubectl delete pod sani-app mysql -n sani-lite
+kubectl delete svc sani-app mysql -n sani-lite
 ```
 
 ---
