@@ -26,7 +26,7 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/patches ./patches
 
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile
 
 ENV NODE_ENV=production
 ENV PORT=3000
