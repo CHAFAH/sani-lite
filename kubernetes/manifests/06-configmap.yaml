@@ -1,0 +1,18 @@
+# ── ConfigMap ─────────────────────────────────────────────────────────────────
+# ConfigMap stores non-sensitive configuration as key-value pairs.
+# Keeps config out of your Docker image — change config without rebuilding.
+# Pods consume ConfigMaps as environment variables or mounted files.
+#
+# Apply:  kubectl apply -f 06-configmap.yaml
+# Check:  kubectl get configmap app-config -n sani-lite -o yaml
+# Describe: kubectl describe configmap app-config -n sani-lite
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: sani-lite
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  LOG_GROUP: "/sani/sani-lite"

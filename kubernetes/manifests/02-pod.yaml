@@ -1,0 +1,58 @@
+# ── MySQL Pod ─────────────────────────────────────────────────────────────────
+# A Pod is the smallest deployable unit in Kubernetes.
+# It runs one or more containers that share network and storage.
+# Pods are NOT self-healing — if this pod dies, it stays dead.
+# That is why we move to ReplicaSet and Deployment next.
+#
+# Apply:  kubectl apply -f 02-pod.yaml
+# Check:  kubectl get pods -n sani-lite
+# Logs:   kubectl logs mysql -n sani-lite
+# Exec:   kubectl exec -it mysql -n sani-lite -- bash
+# Delete: kubectl delete -f 02-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql
+  namespace: sani-lite
+  labels:
+    app: mysql
+spec:
+  containers:
+    - name: mysql
+      image: mysql:8.0
+      ports:
+        - containerPort: 3306
+      env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: rootpassword
+        - name: MYSQL_DATABASE
+          value: sani
+        - name: MYSQL_USER
+          value: sani
+        - name: MYSQL_PASSWORD
+          value: sanipassword
+---
+# ── App Pod ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sani-app
+  namespace: sani-lite
+  labels:
+    app: sani-app
+spec:
+  containers:
+    - name: sani-app
+      image: 075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest
+      ports:
+        - containerPort: 3000
+      env:
+        - name: DATABASE_URL
+          value: mysql://sani:sanipassword@mysql:3306/sani
+        - name: JWT_SECRET
+          value: change-me-in-production
+        - name: NODE_ENV
+          value: production
+        - name: PORT
+          value: "3000"

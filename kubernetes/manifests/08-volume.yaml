@@ -1,0 +1,24 @@
+# ── Persistent Volume & Claim ─────────────────────────────────────────────────
+# Containers are ephemeral — data is lost when a pod restarts.
+# PersistentVolume (PV)      — a piece of storage provisioned in the cluster
+# PersistentVolumeClaim (PVC)— a request for storage by a pod
+#
+# On EKS, the EBS CSI driver dynamically provisions a PV when a PVC is created.
+# storageClassName: gp2 → AWS EBS gp2 volume
+#
+# Apply:  kubectl apply -f 08-volume.yaml
+# Check:  kubectl get pvc -n sani-lite
+#         kubectl get pv
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: sani-lite
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: gp2

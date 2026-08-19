@@ -1,0 +1,70 @@
+# ── ReplicaSet ────────────────────────────────────────────────────────────────
+# A ReplicaSet ensures a specified number of pod replicas are running at all times.
+# If a pod dies, the ReplicaSet creates a new one automatically.
+# However, ReplicaSet does NOT support rolling updates — that is what Deployment adds.
+#
+# Apply:  kubectl apply -f 03-replicaset.yaml
+# Check:  kubectl get rs -n sani-lite
+# Scale:  kubectl scale rs sani-app-rs --replicas=3 -n sani-lite
+
+# ── MySQL ReplicaSet ──────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mysql-rs
+  namespace: sani-lite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: rootpassword
+            - name: MYSQL_DATABASE
+              value: sani
+            - name: MYSQL_USER
+              value: sani
+            - name: MYSQL_PASSWORD
+              value: sanipassword
+---
+# ── App ReplicaSet ────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: sani-app-rs
+  namespace: sani-lite
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sani-app
+  template:
+    metadata:
+      labels:
+        app: sani-app
+    spec:
+      containers:
+        - name: sani-app
+          image: 075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              value: mysql://sani:sanipassword@mysql:3306/sani
+            - name: JWT_SECRET
+              value: change-me-in-production
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"

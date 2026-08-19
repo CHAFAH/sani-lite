@@ -1,3 +1,15 @@
+# ── HorizontalPodAutoscaler (HPA) ─────────────────────────────────────────────
+# HPA automatically scales the number of pod replicas based on CPU/memory usage.
+# Requires the Metrics Server to be installed in the cluster.
+#
+# Apply:   kubectl apply -f 11-hpa.yaml
+# Check:   kubectl get hpa -n sani-lite
+# Watch:   kubectl get hpa sani-app -n sani-lite --watch
+#
+# Simulate load to trigger scale-up:
+#   kubectl run load --image=busybox -it --rm -n sani-lite -- \
+#     sh -c "while true; do wget -qO- http://sani-app:3000; done"
+
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

@@ -1,0 +1,48 @@
+# ── Service ───────────────────────────────────────────────────────────────────
+# A Service gives pods a stable DNS name and IP address.
+# Pods come and go (new IPs each time) — Services stay stable.
+#
+# Types:
+#   ClusterIP   — internal only (default)
+#   NodePort    — exposes on each node's IP at a static port
+#   LoadBalancer— provisions a cloud load balancer (AWS ELB)
+#
+# Apply: kubectl apply -f 05-service.yaml
+# Check: kubectl get svc -n sani-lite
+# Test (ClusterIP): kubectl run tmp --image=busybox -it --rm -n sani-lite -- wget -qO- http://sani-app:3000
+
+# ── MySQL Service (ClusterIP) ─────────────────────────────────────────────────
+# Only reachable inside the cluster — mysql:3306
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: sani-lite
+  labels:
+    app: mysql
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: 3306
+---
+# ── App Service (ClusterIP) ───────────────────────────────────────────────────
+# Internal service — Ingress will route external traffic to this
+apiVersion: v1
+kind: Service
+metadata:
+  name: sani-app
+  namespace: sani-lite
+  labels:
+    app: sani-app
+spec:
+  type: ClusterIP
+  selector:
+    app: sani-app
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
