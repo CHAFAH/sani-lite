@@ -1,18 +1,187 @@
-# ── ConfigMap ─────────────────────────────────────────────────────────────────
-# ConfigMap stores non-sensitive configuration as key-value pairs.
-# Keeps config out of your Docker image — change config without rebuilding.
-# Pods consume ConfigMaps as environment variables or mounted files.
+# ══════════════════════════════════════════════════════════════════════════════
+# STEP 5 — ConfigMap
+# ══════════════════════════════════════════════════════════════════════════════
+# A ConfigMap stores NON-SENSITIVE configuration as key-value pairs.
+# It decouples config from your Docker image — change config without rebuilding.
 #
-# Apply:  kubectl apply -f 06-configmap.yaml
-# Check:  kubectl get configmap app-config -n sani-lite -o yaml
+# Two ways to consume a ConfigMap in a pod:
+#   1. Environment variables  — each key becomes an env var in the container
+#   2. Mounted file           — the ConfigMap is mounted as a file inside the container
+#
+# Apply:    kubectl apply -f 06-configmap.yaml
+# Check:    kubectl get configmap app-config -n sani-lite -o yaml
 # Describe: kubectl describe configmap app-config -n sani-lite
+#
+# Demo — verify env vars inside the running pod:
+#   kubectl exec -it <pod-name> -n sani-lite -- sh
+#   echo $NODE_ENV
+#   echo $PORT
+#
+# Demo — verify mounted file inside the running pod:
+#   kubectl exec -it <pod-name> -n sani-lite -- sh
+#   cat /etc/config/app.properties
+#
+# Access:   http://<NODE_PUBLIC_IP>:30300
+# Cleanup:  kubectl delete -f 06-configmap.yaml
+# ══════════════════════════════════════════════════════════════════════════════
 
+# ── ConfigMap ─────────────────────────────────────────────────────────────────
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: app-config
   namespace: sani-lite
 data:
+  # Used as environment variables
   NODE_ENV: "production"
   PORT: "3000"
   LOG_GROUP: "/sani/sani-lite"
+  # Used as a mounted config file
+  app.properties: |
+    node_env=production
+    port=3000
+    log_group=/sani/sani-lite
+---
+# ── MySQL Deployment ──────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: sani-lite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: rootpassword
+            - name: MYSQL_DATABASE
+              value: sani
+            - name: MYSQL_USER
+              value: sani
+            - name: MYSQL_PASSWORD
+              value: sanipassword
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost", "-u", "sani", "-psanipassword"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+# ── MySQL Service ─────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: sani-lite
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+# ── App Deployment (consuming ConfigMap) ─────────────────────────────────────
+# Shows BOTH ways to use a ConfigMap:
+#   1. envFrom        — loads ALL keys as environment variables at once
+#   2. volumeMounts   — mounts app.properties as a file at /etc/config/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sani-app
+  namespace: sani-lite
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sani-app
+  template:
+    metadata:
+      labels:
+        app: sani-app
+    spec:
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z mysql 3306; do
+                echo "Waiting for MySQL...";
+                sleep 3;
+              done
+      containers:
+        - name: sani-app
+          image: 075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              value: mysql://sani:sanipassword@mysql:3306/sani
+            - name: JWT_SECRET
+              value: change-me-in-production
+          # METHOD 1 — load all ConfigMap keys as env vars
+          envFrom:
+            - configMapRef:
+                name: app-config
+          # METHOD 2 — mount ConfigMap as a file
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+      volumes:
+        - name: config-volume
+          configMap:
+            name: app-config
+---
+# ── App Service (NodePort) ────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: sani-app
+  namespace: sani-lite
+spec:
+  type: NodePort
+  selector:
+    app: sani-app
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30300

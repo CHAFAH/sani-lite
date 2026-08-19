@@ -1,11 +1,31 @@
-# ── ReplicaSet ────────────────────────────────────────────────────────────────
-# A ReplicaSet ensures a specified number of pod replicas are running at all times.
-# If a pod dies, the ReplicaSet creates a new one automatically.
-# However, ReplicaSet does NOT support rolling updates — that is what Deployment adds.
+# ══════════════════════════════════════════════════════════════════════════════
+# STEP 2 — ReplicaSet
+# ══════════════════════════════════════════════════════════════════════════════
+# A ReplicaSet ensures a SPECIFIED NUMBER of pod replicas are always running.
+# If a pod crashes or is deleted, the ReplicaSet immediately creates a new one.
 #
-# Apply:  kubectl apply -f 03-replicaset.yaml
-# Check:  kubectl get rs -n sani-lite
-# Scale:  kubectl scale rs sani-app-rs --replicas=3 -n sani-lite
+# Difference from Pod (Step 1):
+#   Pod       → you run 1 pod, it dies, it stays dead
+#   ReplicaSet → you declare "I want 2 pods", it keeps 2 alive forever
+#
+# Limitation:
+#   ReplicaSet does NOT support rolling updates.
+#   If you change the image, existing pods are NOT updated automatically.
+#   → That is why we move to Deployment next.
+#
+# Apply:    kubectl apply -f 03-replicaset.yaml
+# Check:    kubectl get rs -n sani-lite
+# Pods:     kubectl get pods -n sani-lite
+# Scale:    kubectl scale rs sani-app-rs --replicas=3 -n sani-lite
+#
+# Demo — self-healing:
+#   1. kubectl get pods -n sani-lite          (note pod names)
+#   2. kubectl delete pod <pod-name> -n sani-lite
+#   3. kubectl get pods -n sani-lite --watch  (watch new pod appear instantly)
+#
+# Access:   http://<NODE_PUBLIC_IP>:30300
+# Cleanup:  kubectl delete -f 03-replicaset.yaml
+# ══════════════════════════════════════════════════════════════════════════════
 
 # ── MySQL ReplicaSet ──────────────────────────────────────────────────────────
 apiVersion: apps/v1
@@ -38,6 +58,21 @@ spec:
             - name: MYSQL_PASSWORD
               value: sanipassword
 ---
+# ── MySQL Service (ClusterIP) ─────────────────────────────────────────────────
+# Gives the MySQL ReplicaSet a stable DNS name: mysql:3306
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: sani-lite
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
 # ── App ReplicaSet ────────────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: ReplicaSet
@@ -68,3 +103,20 @@ spec:
               value: production
             - name: PORT
               value: "3000"
+---
+# ── App Service (NodePort) ────────────────────────────────────────────────────
+# Exposes the app on every node at port 30300 so you can open it in a browser.
+# Access: http://<NODE_PUBLIC_IP>:30300
+apiVersion: v1
+kind: Service
+metadata:
+  name: sani-app
+  namespace: sani-lite
+spec:
+  type: NodePort
+  selector:
+    app: sani-app
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30300

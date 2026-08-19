@@ -1,48 +1,228 @@
-# ── Service ───────────────────────────────────────────────────────────────────
-# A Service gives pods a stable DNS name and IP address.
-# Pods come and go (new IPs each time) — Services stay stable.
+# ══════════════════════════════════════════════════════════════════════════════
+# STEP 4 — Service (all three types)
+# ══════════════════════════════════════════════════════════════════════════════
+# A Service gives pods a STABLE DNS name and IP address.
+# Pods are ephemeral — they get a new IP every time they restart.
+# A Service sits in front of pods and never changes its address.
 #
-# Types:
-#   ClusterIP   — internal only (default)
-#   NodePort    — exposes on each node's IP at a static port
-#   LoadBalancer— provisions a cloud load balancer (AWS ELB)
+# How it works:
+#   - The Service uses a SELECTOR to find pods (matchLabels)
+#   - kube-proxy routes traffic from the Service IP to one of the matching pods
+#   - If a pod dies and a new one starts, the Service automatically picks it up
 #
-# Apply: kubectl apply -f 05-service.yaml
-# Check: kubectl get svc -n sani-lite
-# Test (ClusterIP): kubectl run tmp --image=busybox -it --rm -n sani-lite -- wget -qO- http://sani-app:3000
+# Three Service types:
+# ┌─────────────────┬──────────────────────────────┬──────────────────────────┐
+# │ Type            │ Accessible from              │ Use case                 │
+# ├─────────────────┼──────────────────────────────┼──────────────────────────┤
+# │ ClusterIP       │ Inside cluster only          │ Service-to-service comms │
+# │ NodePort        │ Node IP + static port        │ Dev/demo, no cloud LB    │
+# │ LoadBalancer    │ Internet via cloud LB (ELB)  │ Production (or Ingress)  │
+# └─────────────────┴──────────────────────────────┴──────────────────────────┘
+#
+# Apply:   kubectl apply -f 05-service.yaml
+# Check:   kubectl get svc -n sani-lite
+#
+# Demo — test ClusterIP from inside the cluster:
+#   kubectl run tmp --image=busybox --rm -it -n sani-lite -- \
+#     wget -qO- http://sani-app-clusterip:3000
+#
+# Demo — test NodePort from browser:
+#   kubectl get nodes -o wide          (get NODE_PUBLIC_IP)
+#   http://<NODE_PUBLIC_IP>:30300
+#
+# Demo — test LoadBalancer from browser:
+#   kubectl get svc sani-app-lb -n sani-lite   (wait for EXTERNAL-IP)
+#   http://<EXTERNAL-IP>:3000
+#
+# Cleanup: kubectl delete -f 05-service.yaml
+# ══════════════════════════════════════════════════════════════════════════════
 
+# ── MySQL Deployment ──────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: sani-lite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: rootpassword
+            - name: MYSQL_DATABASE
+              value: sani
+            - name: MYSQL_USER
+              value: sani
+            - name: MYSQL_PASSWORD
+              value: sanipassword
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost", "-u", "sani", "-psanipassword"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
 # ── MySQL Service (ClusterIP) ─────────────────────────────────────────────────
-# Only reachable inside the cluster — mysql:3306
+# Internal only — app pods reach MySQL at mysql:3306
 apiVersion: v1
 kind: Service
 metadata:
   name: mysql
   namespace: sani-lite
-  labels:
-    app: mysql
 spec:
   type: ClusterIP
   selector:
     app: mysql
   ports:
-    - name: mysql
-      port: 3306
+    - port: 3306
       targetPort: 3306
 ---
-# ── App Service (ClusterIP) ───────────────────────────────────────────────────
-# Internal service — Ingress will route external traffic to this
-apiVersion: v1
-kind: Service
+# ── App Deployment ────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: sani-app
   namespace: sani-lite
-  labels:
-    app: sani-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sani-app
+  template:
+    metadata:
+      labels:
+        app: sani-app
+    spec:
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z mysql 3306; do
+                echo "Waiting for MySQL...";
+                sleep 3;
+              done
+      containers:
+        - name: sani-app
+          image: 075120018043.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              value: mysql://sani:sanipassword@mysql:3306/sani
+            - name: JWT_SECRET
+              value: change-me-in-production
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+# ══════════════════════════════════════════════════════════════════════════════
+# SERVICE TYPE 1 — ClusterIP (default)
+# ══════════════════════════════════════════════════════════════════════════════
+# Only reachable INSIDE the cluster.
+# Other pods reach this service at: http://sani-app-clusterip:3000
+# DNS: sani-app-clusterip.sani-lite.svc.cluster.local
+#
+# Test from inside the cluster:
+#   kubectl run tmp --image=busybox --rm -it -n sani-lite -- \
+#     wget -qO- http://sani-app-clusterip:3000
+apiVersion: v1
+kind: Service
+metadata:
+  name: sani-app-clusterip
+  namespace: sani-lite
 spec:
   type: ClusterIP
   selector:
     app: sani-app
   ports:
-    - name: http
-      port: 3000
+    - port: 3000
+      targetPort: 3000
+---
+# ══════════════════════════════════════════════════════════════════════════════
+# SERVICE TYPE 2 — NodePort
+# ══════════════════════════════════════════════════════════════════════════════
+# Opens a static port (30300) on EVERY node in the cluster.
+# Accessible from outside using any node's public IP.
+# NodePort range: 30000–32767
+#
+# Get node IP:  kubectl get nodes -o wide
+# Access:       http://<NODE_PUBLIC_IP>:30300
+apiVersion: v1
+kind: Service
+metadata:
+  name: sani-app-nodeport
+  namespace: sani-lite
+spec:
+  type: NodePort
+  selector:
+    app: sani-app
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30300
+---
+# ══════════════════════════════════════════════════════════════════════════════
+# SERVICE TYPE 3 — LoadBalancer
+# ══════════════════════════════════════════════════════════════════════════════
+# Provisions a cloud load balancer (AWS Classic ELB) automatically.
+# Kubernetes talks to the AWS API and creates the ELB for you.
+# Wait ~2 min for EXTERNAL-IP to appear.
+#
+# Check: kubectl get svc sani-app-lb -n sani-lite --watch
+# Access: http://<EXTERNAL-IP>:3000
+#
+# Note: In production we use Ingress + ALB Controller instead (Step 8)
+# because Ingress gives you path-based routing, SSL, and one LB for many services.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sani-app-lb
+  namespace: sani-lite
+spec:
+  type: LoadBalancer
+  selector:
+    app: sani-app
+  ports:
+    - port: 3000
       targetPort: 3000
