@@ -131,24 +131,62 @@ kubectl delete <kind> <name>   # remove
 
 The smallest deployable unit. A Pod wraps one or more containers that share a network namespace (same IP) and can share storage volumes. Pods are ephemeral — when they die, they're gone. You almost never create Pods directly in production.
 
+**Declarative (YAML)**
+
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: backend
-  namespace: employee-app
+  name: sani-app
+  namespace: sani-lite
 spec:
   containers:
-    - name: backend
-      image: 075120018043.dkr.ecr.us-east-1.amazonaws.com/employee-backend:v1
+    - name: sani-app
+      image: 211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest
       ports:
-        - containerPort: 5000
+        - containerPort: 3000
+      env:
+        - name: NODE_ENV
+          value: production
 ```
 
 ```bash
-kubectl get pods -n employee-app
-kubectl logs backend -n employee-app
-kubectl exec -it backend -n employee-app -- bash
+kubectl apply -f 02-pod.yaml
+```
+
+**Imperative (CLI)**
+
+```bash
+# Run a pod directly
+kubectl run sani-app \
+  --image=211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest \
+  --port=3000 \
+  --env="NODE_ENV=production" \
+  -n sani-lite
+
+# Generate YAML without applying (dry run)
+kubectl run sani-app \
+  --image=211125430491.dkr.ecr.us-east-1.amazonaws.com/sani-lite:latest \
+  --port=3000 \
+  --dry-run=client -o yaml
+```
+
+**Inspect and debug**
+
+```bash
+kubectl get pods -n sani-lite
+kubectl get pods -n sani-lite -o wide          # shows node + IP
+kubectl describe pod sani-app -n sani-lite     # events, image, status
+kubectl logs sani-app -n sani-lite             # stdout logs
+kubectl logs sani-app -n sani-lite --follow    # stream logs live
+kubectl exec -it sani-app -n sani-lite -- sh   # shell into the container
+```
+
+**Cleanup**
+
+```bash
+kubectl delete pod sani-app -n sani-lite
+kubectl delete -f 02-pod.yaml
 ```
 
 ---
