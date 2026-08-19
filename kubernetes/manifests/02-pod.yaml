@@ -1,15 +1,21 @@
-# ── MySQL Pod ─────────────────────────────────────────────────────────────────
+# ── STEP 1: Pod ───────────────────────────────────────────────────────────────
 # A Pod is the smallest deployable unit in Kubernetes.
-# It runs one or more containers that share network and storage.
-# Pods are NOT self-healing — if this pod dies, it stays dead.
-# That is why we move to ReplicaSet and Deployment next.
+# It runs one or more containers that share the same network and storage.
 #
-# Apply:  kubectl apply -f 02-pod.yaml
-# Check:  kubectl get pods -n sani-lite
-# Logs:   kubectl logs mysql -n sani-lite
-# Exec:   kubectl exec -it mysql -n sani-lite -- bash
-# Delete: kubectl delete -f 02-pod.yaml
+# Key facts:
+#   - Every pod gets its own IP address inside the cluster
+#   - Pods are EPHEMERAL — if a pod dies, it is gone forever (no restart)
+#   - That is why we need ReplicaSet and Deployment (next steps)
+#   - Multiple containers in one pod share localhost and volumes
+#
+# Apply:    kubectl apply -f 02-pod.yaml
+# Check:    kubectl get pods -n sani-lite
+# Describe: kubectl describe pod sani-app -n sani-lite
+# Logs:     kubectl logs sani-app -n sani-lite
+# Exec:     kubectl exec -it sani-app -n sani-lite -- sh
+# Delete:   kubectl delete -f 02-pod.yaml
 
+# ── MySQL Pod ─────────────────────────────────────────────────────────────────
 apiVersion: v1
 kind: Pod
 metadata:
@@ -32,6 +38,23 @@ spec:
           value: sani
         - name: MYSQL_PASSWORD
           value: sanipassword
+---
+# ── MySQL Service (ClusterIP) ─────────────────────────────────────────────────
+# Without this Service, the sani-app pod cannot reach MySQL by name.
+# ClusterIP gives MySQL a stable DNS name: mysql.sani-lite.svc.cluster.local
+# The sani-app pod connects using: mysql://sani:sanipassword@mysql:3306/sani
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: sani-lite
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
 ---
 # ── App Pod ───────────────────────────────────────────────────────────────────
 apiVersion: v1
@@ -56,3 +79,26 @@ spec:
           value: production
         - name: PORT
           value: "3000"
+---
+# ── App Service (NodePort) ────────────────────────────────────────────────────
+# NodePort exposes the app on every node's IP at port 30300.
+# This lets you access the app directly from your browser during the demo
+# without needing an Ingress or Load Balancer.
+#
+# Access: http://<NODE_PUBLIC_IP>:30300
+#
+# Get node IP:
+#   kubectl get nodes -o wide -n sani-lite
+apiVersion: v1
+kind: Service
+metadata:
+  name: sani-app
+  namespace: sani-lite
+spec:
+  type: NodePort
+  selector:
+    app: sani-app
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30300
