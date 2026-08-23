@@ -2,12 +2,8 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION      = 'us-east-1'
-        ECR_REGISTRY    = '211125430491.dkr.ecr.us-east-1.amazonaws.com'
-        ECR_REPOSITORY  = 'sani-lite'
-        EKS_CLUSTER     = 'sani-lite-cluster-dev'
-        K8S_NAMESPACE   = 'sani-lite'
-        IMAGE_TAG       = "build-${BUILD_NUMBER}"
+        DOCKERHUB_REPO = 'your-dockerhub-username/sani-lite'
+        IMAGE_TAG      = "build-${BUILD_NUMBER}"
     }
 
     stages {
@@ -22,20 +18,19 @@ pipeline {
 
         stage('Build & Push') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
-                ]]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
                     sh '''
-                        aws ecr get-login-password --region $AWS_REGION \
-                          | docker login --username AWS --password-stdin $ECR_REGISTRY
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-                        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-                        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+                        docker build -t $DOCKERHUB_REPO:$IMAGE_TAG .
+                        docker push $DOCKERHUB_REPO:$IMAGE_TAG
 
-                        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-                                   $ECR_REGISTRY/$ECR_REPOSITORY:latest
-                        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+                        docker tag $DOCKERHUB_REPO:$IMAGE_TAG $DOCKERHUB_REPO:latest
+                        docker push $DOCKERHUB_REPO:latest
                     '''
                 }
             }
@@ -43,19 +38,25 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
-                ]]) {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'ec2-ssh-key',
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER'
+                )]) {
                     sh '''
-                        aws eks update-kubeconfig --name $EKS_CLUSTER --region $AWS_REGION
+                        ssh -o StrictHostKeyChecking=no -i $SSH_KEY $SSH_USER@$EC2_HOST "
+                            docker pull $DOCKERHUB_REPO:$IMAGE_TAG
 
-                        kubectl set image deployment/sani-app \
-                          sani-app=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-                          -n $K8S_NAMESPACE
+                            docker rm -f sani-app 2>/dev/null || true
 
-                        kubectl rollout status deployment/sani-app \
-                          -n $K8S_NAMESPACE --timeout=120s
+                            docker run -d --name sani-app --restart unless-stopped \
+                              -p 3000:3000 \
+                              -e DATABASE_URL=$DATABASE_URL \
+                              -e JWT_SECRET=$JWT_SECRET \
+                              -e NODE_ENV=production \
+                              -e PORT=3000 \
+                              $DOCKERHUB_REPO:$IMAGE_TAG
+                        "
                     '''
                 }
             }
@@ -63,7 +64,7 @@ pipeline {
     }
 
     post {
-        success { echo "Deployed $IMAGE_TAG successfully" }
+        success { echo "Deployed $IMAGE_TAG to EC2 successfully" }
         failure { echo "Pipeline failed — check logs above" }
     }
 }
